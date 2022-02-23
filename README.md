@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/32596430/155371283-9d307680-f003-4c18-9e61-0193525c9bdb.png" width="200" height="150" />
+<img src="https://user-images.githubusercontent.com/32596430/155371283-9d307680-f003-4c18-9e61-0193525c9bdb.png" width="400" height="300" />
 
 Simple clicker game for Android in which you destroy chunchies.
 
