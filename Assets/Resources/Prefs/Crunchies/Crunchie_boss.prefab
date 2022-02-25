@@ -183,10 +183,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   crunchieType: 3
-  curMinMaxSpeed: {x: 0, y: 0.7, z: 0.8}
+  curMinMaxSpeed: {x: 0, y: 0.7, z: 0.95}
   hitpoints: {x: 1, y: 1}
   spawnChance: 1
-  spawnAfterKills: 10
+  spawnAfterKills: 15
   passedFinishLine: 0
   bossClickAnim: {fileID: 4406647694655611781, guid: 108130b8333f90949ad7690ba09ec690,
     type: 3}

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿/*using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using GoogleMobileAds;
@@ -27,9 +27,6 @@ public class AdMob : MonoBehaviour
 
     private void Start()
     {
-        Debug.LogWarning("AdMob is disabled!");
-        return;
-
         if (Application.isEditor)
             return;
 
@@ -187,3 +184,4 @@ public class AdMob : MonoBehaviour
     }
 
 }
+*/

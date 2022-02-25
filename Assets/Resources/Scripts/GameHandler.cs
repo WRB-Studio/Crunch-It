@@ -17,8 +17,8 @@ public class GameHandler : MonoBehaviour
     [Header("Score, lifes and multiplier")]
     public static ulong curScore = 0;
     public static int curDestroyed = 0;
-    public static int curLifes = 0;
-    public static int addLifeAtMultiCount = 10;
+    public static int curLifes = 3;
+    public static int addLifeAtMultiCount = 5;
     public static int addLifeCounter = 0;
     public static float multiDelay = 0.5f;
     private static float multiDelayCountDown = 0;
@@ -28,11 +28,9 @@ public class GameHandler : MonoBehaviour
 
     public static bool isPaused = false;
     public static bool isGameOver = false;
-    public static bool adContinueUsed = false;
 
     private static GameObject pauseMenue;
     private static GameObject multiPanel;
-    private static GameObject adContinue;
 
     private static Text txtHealth;
     private static Text txtScore;
@@ -49,7 +47,6 @@ public class GameHandler : MonoBehaviour
     private static Text txtBestMultiplierScore;
 
     private static EventSystem myEventSystem;
-    private static AdMob adMobScrp;
 
     public static GameHandler instance;
 
@@ -73,9 +70,6 @@ public class GameHandler : MonoBehaviour
         playingMusic = StaticAudioHandler.playMusic(mainMusic, -0.5f);
 
         multiPanel = GameObject.Find("MultiPanel");
-        adContinue = GameObject.Find("AdContinue");
-        adContinue.transform.Find("BtContinueAd").GetComponent<Button>().onClick.AddListener(() => showRewardAdForContinuePlay());
-        adContinue.SetActive(false);
 
         txtHealth = GameObject.Find("txtHealth").GetComponent<Text>();
         txtHealth.text = curLifes.ToString();
@@ -94,7 +88,8 @@ public class GameHandler : MonoBehaviour
 
         multiPanel.gameObject.SetActive(false);
 
-        adMobScrp = GameObject.Find("AdMob").GetComponent<AdMob>();
+        //if (GameObject.Find("AdMob") != null)
+        //    adMobScrp = GameObject.Find("AdMob").GetComponent<AdMob>();
 
         pauseMenue = GameObject.Find("PauseMenue");
         pauseMenueShowHide();
@@ -205,11 +200,6 @@ public class GameHandler : MonoBehaviour
         btPause.GetComponent<Button>().interactable = false;
 
         loadSaveShowBestScores();
-
-        if (!adContinueUsed && Application.isEditor)
-            adContinue.SetActive(true);
-        else if (!adContinueUsed && adMobScrp.getRewardAdIsLoaded())
-            adContinue.SetActive(true);
     }
 
     public static bool getGameOver()
@@ -220,6 +210,9 @@ public class GameHandler : MonoBehaviour
     public static void replayGame()
     {
         loadSaveShowBestScores();
+
+        isPaused = false;
+        isGameOver = false;
         SceneManager.LoadScene(0, LoadSceneMode.Single);
     }
 
@@ -318,36 +311,6 @@ public class GameHandler : MonoBehaviour
 #endif
     }
 
-    private static void showRewardAdForContinuePlay()
-    {
-        if (Application.platform == RuntimePlatform.Android)
-        {
-            GameObject.Find("AdMob").GetComponent<AdMob>().userChoseToWatchAd();
-        }
-        else if (Application.isEditor)
-        {
-            continueAfterRewardAd(true);
-        }
-    }
-
-    public static void continueAfterRewardAd(bool rewardEarned)
-    {
-        if (rewardEarned)
-        {
-            if (adContinueUsed)
-                return;
-
-            adContinueUsed = true;
-            adContinue.SetActive(false);
-
-            instance.StartCoroutine(instance.lifeRewardContinue());
-        }
-        else
-        {
-            pauseMenueShowHide(true);
-        }
-    }
-
 
     private static void recalculateBackgroundScale()
     {
@@ -419,78 +382,5 @@ public class GameHandler : MonoBehaviour
         curLifes += newLifeValue;
         txtHealth.text = curLifes.ToString();
     }
-
-    private IEnumerator lifeRewardContinue()
-    {
-        isPaused = true;
-        isGameOver = true;
-
-        playingMusic.pitch = 1;
-
-        //add lifes (animated)
-        for (int i = 0; i < 20; i++)
-        {
-            yield return null;
-
-            Vector2 startPosition = adContinue.transform.position;
-
-            GameObject lifeReference = GameObject.Find("ImgHearth");
-            GameObject newLife = Instantiate(lifeReference, GameObject.Find("ImgHearth").transform);
-            newLife.transform.position = startPosition;
-            newLife.transform.localScale = new Vector3(newLife.transform.localScale.x * 2, newLife.transform.localScale.y * 2, newLife.transform.localScale.z * 2);
-
-            float animationSpeed = 0.08f;
-            float curTime = 0;
-
-            while (Vector2.Distance(newLife.transform.position, lifeReference.transform.position) > 0.1f)
-            {
-                yield return null;
-
-                curTime += Time.deltaTime / animationSpeed;
-                newLife.transform.position = Vector3.Lerp(startPosition, lifeReference.transform.position, curTime);
-                newLife.transform.localScale = Vector3.Lerp(newLife.transform.localScale, Vector3.one, curTime);
-            }
-
-            Destroy(newLife);
-            StaticAudioHandler.playSound(addLifeSound, "tmpAddLife", 1, 0, -0.5f);
-
-            curLifes += 1;
-            txtHealth.text = curLifes.ToString();
-        }
-
-        List<Crunchie> crunchyList = GameObject.Find("CrunchieSpawner").GetComponent<CrunchieSpawner>().getCrunchyList();
-
-        //Remove as many as there are 10 left.
-        while (crunchyList.Count > 10)
-        {
-            yield return new WaitForSeconds(0.03f);
-
-            crunchyList[Random.Range(0, crunchyList.Count - 1)].death();
-        }
-
-        //remove all crunchies below position.y zero
-        foreach (Crunchie crunchy in crunchyList.ToArray())
-        {
-            yield return new WaitForSeconds(0.03f);
-
-            if (crunchy.transform.position.y < 0)
-                crunchy.death();
-        }
-
-        adContinueUsed = true;
-
-        isGameOver = false;
-        isPaused = false;
-        txtStopGame.text = "Pause";
-
-        playingMusic.pitch = 1f;
-
-        btContinue.interactable = true;
-        Color tmpColor = btContinue.transform.GetChild(0).GetComponent<Image>().color;
-        tmpColor.a = 1f;
-        btContinue.transform.GetChild(0).GetComponent<Image>().color = tmpColor;
-        btPause.GetComponent<Button>().interactable = true;
-        adContinue.SetActive(false);
-    }
-
+        
 }

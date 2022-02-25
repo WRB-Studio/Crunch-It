@@ -24,6 +24,7 @@ public class Crunchie : MonoBehaviour
 
 
 
+    
     private void Start()
     {
         curMinMaxSpeed.x = Random.Range(curMinMaxSpeed.y, curMinMaxSpeed.z);
@@ -34,6 +35,8 @@ public class Crunchie : MonoBehaviour
             if (hitpoints.x < 2)
                 hitpoints.x = 2;
         }
+
+
     }
 
     private void OnMouseDown()
@@ -53,7 +56,7 @@ public class Crunchie : MonoBehaviour
             //if boss killed
             if (hitpoints.x <= 0)
             {
-                GameHandler.addScore((ulong)(hitpoints.x * 2));
+                GameHandler.addScore((ulong)(hitpoints.y * 2));
                 GameHandler.addDestroyed(1);
 
                 death();
@@ -112,19 +115,42 @@ public class Crunchie : MonoBehaviour
 
     public void updateCall()
     {
-        //moving
-        transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x);
-
-        //set has reached the finish line
-        if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
+        if (!GameHandler.isGameOver && !GameHandler.isPaused)
         {
-            passedFinishLine = true;
-            GameHandler.addLife(-1);
-        }
+            //moving
+            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x);
 
-        //Remove when out of bottom cam view
-        if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
-            CrunchieSpawner.removeCrunchie(this);
+            //set has reached the finish line
+            if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
+            {
+                passedFinishLine = true;
+                GameHandler.addLife(-1);
+            }
+
+            //Remove when out of bottom cam view
+            if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
+                CrunchieSpawner.removeCrunchie(this);
+        }
+        else if(GameHandler.isGameOver)//on gameover crunchie run faster
+        {
+            //moving
+            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * 1.5f);
+
+            //set has reached the finish line
+            if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
+            {
+                passedFinishLine = true;
+            }
+
+            //Remove when out of bottom cam view
+            if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
+                CrunchieSpawner.removeCrunchie(this);
+        }      
+    }
+
+    public float getSpawnChance()
+    {
+        return spawnChance;
     }
 
 }
