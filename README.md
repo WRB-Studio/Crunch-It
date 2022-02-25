@@ -5,7 +5,8 @@
 A mini android game where you kill cute little crunchies with your fingers.<br> Tap them to kill them.
 Playable APK coming soon.
 </p>
-Android APK can be found at Crunch-It/Assets/Resources/Builds/Android/.
+Android APK can be found at [Project Terraforming](https://github.com/WRB-Studio/Crunch-It/tree/main/Assets/Resources/Builds/Android).
+
 <br>
 <br>
 
