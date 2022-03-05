@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Crunchie : MonoBehaviour
 {
@@ -22,9 +20,10 @@ public class Crunchie : MonoBehaviour
     public GameObject explosion;
     public AudioClip[] crunchSounds;
 
+    public Color originColor;
+    public Sprite originFace;
 
 
-    
     private void Start()
     {
         curMinMaxSpeed.x = Random.Range(curMinMaxSpeed.y, curMinMaxSpeed.z);
@@ -36,7 +35,8 @@ public class Crunchie : MonoBehaviour
                 hitpoints.x = 2;
         }
 
-
+        originColor = GetComponent<SpriteRenderer>().color;
+        originFace = transform.GetChild(0).GetComponent<SpriteRenderer>().sprite;
     }
 
     private void OnMouseDown()
@@ -118,7 +118,7 @@ public class Crunchie : MonoBehaviour
         if (!GameHandler.isGameOver && !GameHandler.isPaused)
         {
             //moving
-            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x);
+            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * UltimateMode.instance.currentMultiplier);
 
             //set has reached the finish line
             if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
@@ -131,10 +131,10 @@ public class Crunchie : MonoBehaviour
             if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
                 CrunchieSpawner.removeCrunchie(this);
         }
-        else if(GameHandler.isGameOver)//on gameover crunchie run faster
+        else if (GameHandler.isGameOver)//on gameover crunchie run faster
         {
             //moving
-            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * 1.5f);
+            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * 1.5f * UltimateMode.instance.currentMultiplier);
 
             //set has reached the finish line
             if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
@@ -145,12 +145,41 @@ public class Crunchie : MonoBehaviour
             //Remove when out of bottom cam view
             if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
                 CrunchieSpawner.removeCrunchie(this);
-        }      
+        }
     }
+
+    public void setUltimateMode(Sprite face)
+    {
+        if (face == null)
+        {
+            GetComponent<SpriteRenderer>().color = originColor;
+            transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = originFace;
+        }
+        else
+        {
+            Color tmpColor = GetComponent<SpriteRenderer>().color;
+            tmpColor.a = 1;
+            tmpColor.r += 0.02f;
+            tmpColor.g -= 0.03f;
+            tmpColor.b -= 0.03f;
+            GetComponent<SpriteRenderer>().color = tmpColor;
+            transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = face;
+        }
+    }
+
 
     public float getSpawnChance()
     {
         return spawnChance;
+    }
+
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.transform.tag == "UltimateSmash")
+        {
+            death();
+        }
     }
 
 }

@@ -112,6 +112,8 @@ public class GameHandler : MonoBehaviour
     public static void addDestroyed(int addDestroyed)
     {
         curDestroyed += addDestroyed;
+
+        UltimateMode.instance.addUltimateKill(addDestroyed);
     }
 
     public static void addLife(int newLifeValue)
@@ -182,6 +184,8 @@ public class GameHandler : MonoBehaviour
             addLife(1);
             addLifeCounter = 0;
         }
+
+        UltimateMode.instance.checkUltimateModes();
     }
 
 

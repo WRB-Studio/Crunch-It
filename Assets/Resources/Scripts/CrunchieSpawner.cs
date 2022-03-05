@@ -17,6 +17,8 @@ public class CrunchieSpawner : MonoBehaviour
 
     public static Transform finishLine;
 
+
+
     public static CrunchieSpawner instance;
 
 
@@ -61,6 +63,8 @@ public class CrunchieSpawner : MonoBehaviour
             return;
 
         spawnChance += getIncreaseSpawnChancePerSecond();
+        if (spawnChance > 1)
+            spawnChance = 1;
     }
 
     public float getIncreaseSpawnChancePerSecond()
@@ -75,7 +79,7 @@ public class CrunchieSpawner : MonoBehaviour
 
     private void instantiateCrunchie()
     {
-        float randomVal = Random.value;
+        float randomVal = Random.value * (UltimateMode.instance.currentMultiplier / 20);
         GameObject newCrunchie = null;
         Color randColor;
 
@@ -121,6 +125,9 @@ public class CrunchieSpawner : MonoBehaviour
         {
             newCrunchie.transform.position = randomSpawnpointOutOfCamView();
             newCrunchie.transform.parent = transform;
+            
+            UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
+            
             instantiatedCrunchies.Add(newCrunchie.GetComponent<Crunchie>());
         }
 
@@ -140,6 +147,9 @@ public class CrunchieSpawner : MonoBehaviour
 
             newCrunchie.transform.position = randomSpawnpointOutOfCamView();
             newCrunchie.transform.parent = transform;
+
+            UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
+
             instantiatedCrunchies.Add(newCrunchie.GetComponent<Crunchie>());
         }
     }
@@ -221,5 +231,11 @@ public class CrunchieSpawner : MonoBehaviour
         return instantiatedCrunchies;
     }
 
-
+    public void setUltimateMode(Sprite crunchieFace = null)
+    {
+        for (int i = 0; i < instantiatedCrunchies.Count; i++)
+        {
+            instantiatedCrunchies[i].setUltimateMode(crunchieFace);
+        }
+    }
 }

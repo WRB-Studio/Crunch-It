@@ -1266,7 +1266,7 @@ MonoBehaviour:
   - {fileID: 2542026270993285825, guid: d92efa1f48e079146891242223a4a1fa, type: 3}
   - {fileID: 2542026270993285825, guid: 20de05b638da0c84a8b0c9acf648102c, type: 3}
   spawnChance: 0.0015
-  increaseSpawnChancePerSecond: 0.0003
+  increaseSpawnChancePerSecond: 0.0001
 --- !u!1 &703732469
 GameObject:
   m_ObjectHideFlags: 0
@@ -1636,6 +1636,64 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 867245236}
   m_CullTransparentMesh: 0
+--- !u!1 &961562707
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 961562708}
+  - component: {fileID: 961562709}
+  m_Layer: 0
+  m_Name: UltimateMode
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &961562708
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961562707}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1242657712}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &961562709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961562707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26c9dd2ad997b314d83f5dbb19fcee68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentMode: 0
+  currentMultiplier: 1
+  multiplierLight: 1.1
+  multiplierMedium: 1.25
+  multiplierFull: 1.5
+  lightModeAt: 6
+  mediumModeAt: 12
+  fullModeAt: 20
+  lightFace: {fileID: 21300000, guid: e9d9c8e0a903958439d350e524fa7783, type: 3}
+  mediumFace: {fileID: 21300000, guid: 443d4b57c0c973d45a948a9b86988448, type: 3}
+  fullFace: {fileID: 21300000, guid: ba0d13df610fc6b4080cc319777ab427, type: 3}
+  ultimateKills: 0
+  ultimateSmasherByKills: 2
+  ultimateSmashPrefab: {fileID: 4963354261479608783, guid: 8975109940662e3479c2a2c43abb6714,
+    type: 3}
 --- !u!1 &1069312563
 GameObject:
   m_ObjectHideFlags: 0
@@ -2127,6 +2185,7 @@ Transform:
   m_Children:
   - {fileID: 793115757}
   - {fileID: 695184210}
+  - {fileID: 961562708}
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
