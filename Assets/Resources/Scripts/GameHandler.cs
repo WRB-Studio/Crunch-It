@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,42 +14,50 @@ public class GameHandler : MonoBehaviour
     public AudioClip mainMusic;
     private AudioSource playingMusic;
     public AudioClip addLifeSound;
+    public AudioClip countSound;
 
-    [Header("Score, lifes and multiplier")]
-    public static ulong curScore = 0;
+    [Header("Score")]
+    public float counterAnimationSpeed = 0.2f;
+    public static Int32 curScore = 0;
     public static int curDestroyed = 0;
+
+    [Header("Life")]
     public static int curLifes = 3;
 
-    public int addLifeAtMultiCount = 5;
+    [Header("Combo")]
+    public int addLifeAtComboCount = 5;
     public static int addLifeCounter = 0;
-    public float multiDelay = 0.5f;
-    private static float multiDelayCountDown = 0;
-    public static int multiCounter = 0;
-    private static int curBestMultiplier = 0;
-    private static ulong curBestMultiplierScore = 0;
+    public float comboDelay = 0.75f;
+    private static float comboDelayCountDown = 0;
+    public static int comboCounter = 0;
+    private static int curBestCombo = 0;
 
     public static bool isPaused = false;
     public static bool isGameOver = false;
 
-    private static GameObject pauseMenue;
-    private static GameObject multiPanel;
+    [Header("UI elements")]
+    public GameObject UIContent;
+    public GameObject pauseMenue;
+    public GameObject comboPanel;
+    public GameObject comboScorePopupPrefab;
 
-    private static Text txtHealth;
-    private static Text txtScore;
-    private static Text txtStopGame;
-    private static Text txtMulti;
+    public Text txtHealth;
+    public Text txtScore;
+    public Text txtPauseMenuTitle;
+    public Text txtCombo;
 
-    private static Button btPause;
-    private static Button btContinue;
-    private static Button btReplay;
-    private static Button btExit;
+    public Button btPause;
+    public Button btContinue;
+    public Button btReplay;
+    public Button btExit;
 
     public Text txtYOUScore;
-    public Text txtYOUMultiplier;
-    public Text txtYOUMultiplierScore;
+    public Text txtYOUCombo;
     public Text txtBestScore;
-    public Text txtBestMultiplier;
-    public Text txtBestMultiplierScore;
+    public Text txtBestCombo;
+    public GameObject newBestScoreArrow;
+    public GameObject newBestComboArrow;
+    public RectTransform scorePanel;
 
     private static EventSystem myEventSystem;
 
@@ -63,50 +72,69 @@ public class GameHandler : MonoBehaviour
 
     private void Start()
     {
-        recalculateBackgroundScale();
-        recalculateSideCollidersPosition();
-
         if (removeSaveGame)
             SaveLoadData.removeAll();
 
-        myEventSystem = GameObject.Find("EventSystem").GetComponent<EventSystem>();
-
-        playingMusic = StaticAudioHandler.playMusic(mainMusic, -0.5f);
-
-        multiPanel = GameObject.Find("MultiPanel");
-
-        txtHealth = GameObject.Find("txtHealth").GetComponent<Text>();
-        txtHealth.text = curLifes.ToString();
-        txtScore = GameObject.Find("txtScore").GetComponent<Text>();
-        txtStopGame = GameObject.Find("txtStopGame").GetComponent<Text>();
-        txtMulti = GameObject.Find("txtMulti").GetComponent<Text>();
-
-        btPause = GameObject.Find("BtPause").GetComponent<Button>();
-        btContinue = GameObject.Find("BtContinue").GetComponent<Button>();
-        btReplay = GameObject.Find("BtReplay").GetComponent<Button>();
-        btExit = GameObject.Find("BtExit").GetComponent<Button>();
-
-        multiPanel.gameObject.SetActive(false);
-
-        //if (GameObject.Find("AdMob") != null)
-        //    adMobScrp = GameObject.Find("AdMob").GetComponent<AdMob>();
-
-        pauseMenue = GameObject.Find("PauseMenue");
-        pauseMenueShowHide();
+        init();
     }
 
     private void Update()
     {
         myEventSystem.SetSelectedGameObject(null);//deselect ui-elements after clicking on it.
 
-        multiHandlerUpdate();
+        comboHandlerUpdateCall();
+        UltimateMode.updateCall();
+        CrunchieSpawner.updateCall();
+    }
+
+    public static void init()
+    {
+        recalculateBackgroundScale();
+        recalculateSideCollidersPosition();
+
+        curScore = 0;
+        curDestroyed = 0;
+
+        curLifes = 3;
+
+        addLifeCounter = 0;
+        comboDelayCountDown = 0;
+        comboCounter = 0;
+        curBestCombo = 0;
+
+        isPaused = false;
+        isGameOver = false;
+
+        instance.txtHealth.text = curLifes.ToString();
+        instance.txtScore.text = curScore.ToString();
+        instance.txtPauseMenuTitle.text = "Pause";
+        instance.txtCombo.text = comboCounter.ToString();
+
+        instance.newBestScoreArrow.GetComponent<Image>().enabled = false;
+        instance.newBestComboArrow.GetComponent<Image>().enabled = false;
+
+        myEventSystem = GameObject.Find("EventSystem").GetComponent<EventSystem>();
+
+        instance.playingMusic = StaticAudioHandler.playMusic(instance.mainMusic, -0.5f);
+
+        instance.comboPanel.gameObject.SetActive(false);
+
+        //if (GameObject.Find("AdMob") != null)
+        //    adMobScrp = GameObject.Find("AdMob").GetComponent<AdMob>();
+
+        UltimateMode.init();
+        CrunchieSpawner.init();
+
+        showScore(false);
+
+        pauseMenueShowHide();
     }
 
 
-    public static void addScore(ulong addScore)
+    public static void addScore(Int32 addScore)
     {
         curScore += addScore;
-        txtScore.text = curScore.ToString();
+        instance.txtScore.text = curScore.ToString();
     }
 
     public static void addDestroyed(int addDestroyed)
@@ -127,67 +155,70 @@ public class GameHandler : MonoBehaviour
             curLifes += newLifeValue;
             if (curLifes < 0)
                 curLifes = 0;
-            txtHealth.text = curLifes.ToString();
+            instance.txtHealth.text = curLifes.ToString();
             if (curLifes <= 0)
                 setGameOver();
         }
     }
 
-    private static void multiHandlerUpdate()
+    private static void comboHandlerUpdateCall()
     {
-        if (multiDelayCountDown > 0)
+        if (getIsPause())
+            return;
+
+        if (comboDelayCountDown > 0)//when combo active
         {
-            multiDelayCountDown -= Time.deltaTime;
+            comboDelayCountDown -= Time.deltaTime;
 
-            if (multiDelayCountDown <= 0)
+            if (comboDelayCountDown <= 0)//when combo ends
             {
-                if (multiCounter > 1)
+                if (comboCounter > 1)//calculate score for ended combo
                 {
-                    if (multiCounter > curBestMultiplier)
-                        curBestMultiplier = multiCounter;
+                    if (comboCounter > curBestCombo)//check combo is current highest combo
+                        curBestCombo = comboCounter;
 
-                    ulong tmpMultiScore = (ulong)multiCounter * (ulong)multiCounter;
-                    if (tmpMultiScore > curBestMultiplierScore)
-                        curBestMultiplierScore = tmpMultiScore;
+                    Int32 tmpComboScore = (Int32)comboCounter * (Int32)comboCounter;//calculate combo score
 
-                    addScore(tmpMultiScore);
+                    GameObject newComboScorePopup = Instantiate(instance.comboScorePopupPrefab, instance.UIContent.transform);
+                    newComboScorePopup.GetComponent<Text>().text = tmpComboScore.ToString();
+                    Destroy(newComboScorePopup, 3f);
+
+                    addScore(tmpComboScore);
                 }
-                multiCounter = 1;
-                multiPanel.gameObject.SetActive(false);
+                comboCounter = 1;
+                instance.comboPanel.gameObject.SetActive(false);
             }
         }
     }
 
-    public static void setMulti()
+    public static void setCombo()
     {
-        if (multiDelayCountDown <= 0)
+        if (comboDelayCountDown <= 0)//when combo counter ends
         {
-            multiCounter = 0;
+            comboCounter = 0;
             addLifeCounter = 0;
-            multiPanel.gameObject.SetActive(false);
+            instance.comboPanel.gameObject.SetActive(false);
         }
 
-        multiDelayCountDown = instance.multiDelay;
+        comboDelayCountDown = instance.comboDelay;//reset combo countdown
 
-        //display multiplier
-        multiCounter++;
-        if (multiCounter > 1)
+        //activate and display combo
+        comboCounter++;
+        if (comboCounter > 1)
         {
-            multiPanel.gameObject.SetActive(true);
-            multiPanel.GetComponent<Animator>().Play("MultiAdd");
-            txtMulti.text = multiCounter.ToString() + "X";
+            instance.comboPanel.gameObject.SetActive(true);
+            instance.comboPanel.GetComponent<Animator>().Play("MultiAdd");
+            instance.txtCombo.text = comboCounter.ToString() + "X";
         }
 
-        //add life after n succesfull multi clicks
+        //add life after defined combo clicks
         addLifeCounter++;
-        if (addLifeCounter == instance.addLifeAtMultiCount)
+        if (addLifeCounter == instance.addLifeAtComboCount)
         {
             addLife(1);
-            multiPanel.GetComponent<Animator>().Play("MultiAdd");
+            instance.comboPanel.GetComponent<Animator>().Play("MultiAdd");
             addLifeCounter = 0;
         }
-
-        UltimateMode.instance.checkUltimateModes();
     }
 
 
@@ -195,17 +226,18 @@ public class GameHandler : MonoBehaviour
     {
         isGameOver = true;
         pauseMenueShowHide();
-        txtStopGame.text = "GAME OVER";
+        instance.txtPauseMenuTitle.text = "GAME OVER";
 
         instance.playingMusic.pitch = -1.2f;
 
-        btContinue.interactable = false;
-        Color tmpColor = btContinue.transform.GetChild(0).GetComponent<Image>().color;
+        instance.btContinue.interactable = false;
+        Color tmpColor = instance.btContinue.transform.GetChild(0).GetComponent<Image>().color;
         tmpColor.a = 0.2f;
-        btContinue.transform.GetChild(0).GetComponent<Image>().color = tmpColor;
-        btPause.GetComponent<Button>().interactable = false;
+        instance.btContinue.transform.GetChild(0).GetComponent<Image>().color = tmpColor;
+        instance.btPause.GetComponent<Button>().interactable = false;
 
-        loadSaveShowBestScores();
+        showScore();
+        saveBestScores();
     }
 
     public static bool getGameOver()
@@ -215,26 +247,24 @@ public class GameHandler : MonoBehaviour
 
     public static void replayGame()
     {
-        loadSaveShowBestScores();
+        saveBestScores();
 
-        isPaused = false;
-        isGameOver = false;
-        SceneManager.LoadScene(0, LoadSceneMode.Single);
+        init();
     }
 
     public static void pauseMenueShowHide()
     {
-        if (pauseMenue.activeSelf)
+        if (instance.pauseMenue.activeSelf)
         {
-            pauseMenue.SetActive(false);
+            instance.pauseMenue.SetActive(false);
             isPaused = false;
         }
         else
         {
-            pauseMenue.SetActive(true);
+            instance.pauseMenue.SetActive(true);
             isPaused = true;
 
-            loadShowScores();
+            showScore();
         }
     }
 
@@ -242,58 +272,34 @@ public class GameHandler : MonoBehaviour
     {
         if (!show)
         {
-            pauseMenue.SetActive(false);
+            instance.pauseMenue.SetActive(false);
             isPaused = false;
         }
         else
         {
-            pauseMenue.SetActive(true);
+            instance.pauseMenue.SetActive(true);
             isPaused = true;
 
-            loadShowScores();
+            showScore();
         }
     }
 
-    private static void loadShowScores()
+    private static void showScore(bool playSound = true)
     {
-        ulong loadedBestScore = SaveLoadData.loadBestScore();
-        int loadedBestMultiplier = SaveLoadData.loadBestMultiplier();
-        ulong loadedBestMultiplierScore = SaveLoadData.loadBestMultiplierScore();
+        Int32 loadedBestScore = SaveLoadData.loadBestScore();
+        int loadedBestCombo = SaveLoadData.loadBestCombo();
 
-        instance.txtYOUScore.text = curScore.ToString();
-        instance.txtBestScore.text = loadedBestScore.ToString();
+        instance.StartCoroutine(instance.countAnimationCoroutine(instance.txtYOUScore, 0, curScore, instance.counterAnimationSpeed, "",  playSound));
+        instance.StartCoroutine(instance.countAnimationCoroutine(instance.txtBestScore, 0, loadedBestScore, instance.counterAnimationSpeed, "", playSound));
+        instance.StartCoroutine(instance.countAnimationCoroutine(instance.txtYOUCombo, 0, curBestCombo, instance.counterAnimationSpeed, "x", playSound));
+        instance.StartCoroutine(instance.countAnimationCoroutine(instance.txtBestCombo, 0, loadedBestCombo, instance.counterAnimationSpeed, "x", playSound));
 
-        instance.txtYOUMultiplier.text = curBestMultiplier + "x";
-        instance.txtBestMultiplier.text = loadedBestMultiplier.ToString();
-
-        instance.txtYOUMultiplierScore.text = curBestMultiplierScore.ToString();
-        instance.txtBestMultiplierScore.text = loadedBestMultiplierScore.ToString();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(instance.scorePanel);
     }
 
-    private static void loadSaveShowBestScores()
+    private static void saveBestScores()
     {
-        ulong loadedBestScore = SaveLoadData.loadBestScore();
-        int loadedBestMultiplier = SaveLoadData.loadBestMultiplier();
-        ulong loadedBestMultiplierScore = SaveLoadData.loadBestMultiplierScore();
-
-        instance.txtYOUScore.text = curScore.ToString();
-        instance.txtBestScore.text = loadedBestScore.ToString();
-
-        instance.txtYOUMultiplier.text = curBestMultiplier + "x";
-        instance.txtBestMultiplier.text = loadedBestMultiplier.ToString();
-
-        instance.txtYOUMultiplierScore.text = curBestMultiplierScore.ToString();
-        instance.txtBestMultiplierScore.text = loadedBestMultiplierScore.ToString();
-
-        if (loadedBestScore < curScore)
-            SaveLoadData.saveBestScore(curScore);
-
-        if (loadedBestMultiplier < curBestMultiplier)
-            SaveLoadData.saveBestMultiplier(curBestMultiplier);
-
-        if (loadedBestMultiplierScore < curBestMultiplierScore)
-            SaveLoadData.saveBestMultiplierScore(curBestMultiplierScore);
-
+        instance.StartCoroutine(instance.setNewBestCoroutine());
     }
 
     public static bool getIsPause()
@@ -303,7 +309,7 @@ public class GameHandler : MonoBehaviour
 
     public static void exitGame()
     {
-        loadSaveShowBestScores();
+        saveBestScores();
 
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
@@ -355,7 +361,7 @@ public class GameHandler : MonoBehaviour
     private IEnumerator addLifeAnimation(int newLifeValue)
     {
         Vector2 inputPosition;
-        if (Application.platform == RuntimePlatform.Android)
+        if (Application.platform == RuntimePlatform.Android && Input.touchCount > 0)
             inputPosition = Input.GetTouch(0).position;
         else
             inputPosition = Input.mousePosition;
@@ -384,4 +390,71 @@ public class GameHandler : MonoBehaviour
         txtHealth.text = curLifes.ToString();
     }
 
+    private IEnumerator countAnimationCoroutine(Text textElement, Int32 startValue, Int32 endValue, float countingSpeed, string extension = "", bool playCountSound = true)
+    {
+        yield return new WaitForSeconds(0.2f);
+
+        int counterIntervall = (Int32)endValue / 10;
+        if (counterIntervall <= 10)
+            counterIntervall = 1;
+
+        int playSoundByIntervall = 2;
+        int playSoundCountdown = 0;
+
+        for (Int32 counter = startValue; counter < endValue; counter += counterIntervall)
+        {
+            if (Application.platform == RuntimePlatform.Android && Input.touchCount > 0)
+                break;
+            else if (Input.GetMouseButton(0))
+                break;
+
+            textElement.text = counter + extension;
+
+            if (playCountSound)
+            {
+                playSoundCountdown--;
+                if (playSoundCountdown <= 0)
+                {
+                    StaticAudioHandler.playSound(countSound, "tmpCountSound", 1.3f, 0.05f, -0.5f);
+                    playSoundCountdown = playSoundByIntervall;
+                }
+            }
+            
+            yield return new WaitForSeconds(countingSpeed);
+        }
+
+        textElement.text = endValue + extension;
+    }
+
+    private IEnumerator setNewBestCoroutine()
+    {
+        Int32 loadedBestScore = SaveLoadData.loadBestScore();
+        int loadedBestCombo = SaveLoadData.loadBestCombo();
+
+        if (curScore > loadedBestScore)
+        {
+            newBestScoreArrow.GetComponent<Image>().enabled = true;
+        }
+
+        if (curBestCombo > loadedBestCombo)
+        {
+            newBestComboArrow.GetComponent<Image>().enabled = true;
+        }
+
+        yield return new WaitForSeconds(1f);
+
+        if (curScore > loadedBestScore)
+        {
+            SaveLoadData.saveBestScore(curScore);
+            instance.StartCoroutine(instance.countAnimationCoroutine(instance.txtBestScore, 0, curScore, instance.counterAnimationSpeed));
+        }
+
+        if (curBestCombo > loadedBestCombo)
+        {
+            SaveLoadData.saveBestCombo(curBestCombo);
+            instance.StartCoroutine(instance.countAnimationCoroutine(instance.txtBestCombo, 0, curBestCombo, instance.counterAnimationSpeed, "x"));
+        }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(instance.scorePanel);
+    }
 }

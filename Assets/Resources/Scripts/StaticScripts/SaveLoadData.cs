@@ -14,8 +14,7 @@ public class SaveLoadData : MonoBehaviour
         soundState,
 
         bestScore,
-        bestMultiplier,
-        bestMultiplierScore
+        bestCombo,
     }
 
     static public bool checkApplicationHasSaves()
@@ -57,21 +56,15 @@ public class SaveLoadData : MonoBehaviour
     }
 
 
-    static public void saveBestScore(ulong score)
+    static public void saveBestScore(Int32 score)
     {
         PlayerPrefs.SetString(KEY + keyname.bestScore, score.ToString());
         PlayerPrefs.Save();
     }
 
-    static public void saveBestMultiplier(int multiplier)
+    static public void saveBestCombo(int combo)
     {
-        PlayerPrefs.SetInt(KEY + keyname.bestMultiplier, multiplier);
-        PlayerPrefs.Save();
-    }
-
-    static public void saveBestMultiplierScore(ulong multiplierScore)
-    {
-        PlayerPrefs.SetString(KEY + keyname.bestMultiplierScore, multiplierScore.ToString());
+        PlayerPrefs.SetInt(KEY + keyname.bestCombo, combo);
         PlayerPrefs.Save();
     }
 
@@ -98,27 +91,22 @@ public class SaveLoadData : MonoBehaviour
     }
 
 
-    static public ulong loadBestScore()
+    static public Int32 loadBestScore()
     {
-        return stringToUlong(PlayerPrefs.GetString(KEY + keyname.bestScore, null));
+        return stringToInt32(PlayerPrefs.GetString(KEY + keyname.bestScore, null));
     }
 
-    static public int loadBestMultiplier()
+    static public int loadBestCombo()
     {
-        return PlayerPrefs.GetInt(KEY + keyname.bestMultiplier, 0);
-    }
-
-    static public ulong loadBestMultiplierScore()
-    {
-        return stringToUlong(PlayerPrefs.GetString(KEY + keyname.bestMultiplierScore, null));
+        return PlayerPrefs.GetInt(KEY + keyname.bestCombo, 0);
     }
 
 
-    static private ulong stringToUlong(string ulongString)
+    static private Int32 stringToInt32(string Int32String)
     {
-        ulong toLong;
-        ulong.TryParse(ulongString, out toLong);
-        return toLong;
+        Int32 toInt32;
+        Int32.TryParse(Int32String, out toInt32);
+        return toInt32;
     }
 
 }

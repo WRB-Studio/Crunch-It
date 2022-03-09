@@ -5,8 +5,8 @@ using UnityEngine;
 public class CrunchieSpawner : MonoBehaviour
 {
     public float crunchieSizeMultiplier = 1;
-    public float spawnChance = 0.2f;
-    public float increaseSpawnChancePerSecond = 0.01f;
+    public Vector2 spawnChance;
+    public Vector2 increaseSpawnChancePerSecond;
 
     public Sprite[] faces;
     public Sprite[] facesBoss;
@@ -19,8 +19,6 @@ public class CrunchieSpawner : MonoBehaviour
 
     public static Transform finishLine;
 
-
-
     public static CrunchieSpawner instance;
 
 
@@ -30,25 +28,10 @@ public class CrunchieSpawner : MonoBehaviour
         instance = this;
     }
 
-    void Start()
-    {
-        if (Application.platform != RuntimePlatform.Android)
-        {
-            increaseSpawnChancePerSecond /= 8;
-            spawnChance /= 20;
-        }
-
-        finishLine = GameObject.Find("FinishLine").transform;
-
-        camBounds = getCamBoundBoxPositions();
-
-        InvokeRepeating("invokeIncreasePropabilitie", 1, 1);
-    }
-
-    void Update()
+    public static void updateCall()
     {
         if (!GameHandler.isGameOver && !GameHandler.getIsPause())
-            instantiateCrunchie();
+            instance.instantiateCrunchie();
 
         for (int i = 0; i < instantiatedCrunchies.ToArray().Length; i++)
         {
@@ -58,25 +41,50 @@ public class CrunchieSpawner : MonoBehaviour
 
     }
 
+    public static void init()
+    {
+        instance.spawnChance.x = instance.spawnChance.y;
+
+        for (int i = 0; i < instantiatedCrunchies.Count; i++)
+        {
+            Destroy(instantiatedCrunchies[i].gameObject);
+        }
+
+        instantiatedCrunchies = new List<Crunchie>();
+
+
+        if (Application.platform != RuntimePlatform.Android)
+        {
+            instance.increaseSpawnChancePerSecond.x = instance.increaseSpawnChancePerSecond.y / 8;
+            instance.spawnChance.x = instance.spawnChance.y / 20;
+        }
+
+        finishLine = GameObject.Find("FinishLine").transform;
+
+        camBounds = instance.getCamBoundBoxPositions();
+
+        instance.InvokeRepeating("invokeIncreasePropabilitie", 1, 1);
+    }
+
 
     private void invokeIncreasePropabilitie()
     {
         if (GameHandler.getGameOver() || GameHandler.getIsPause())
             return;
 
-        spawnChance += getIncreaseSpawnChancePerSecond();
-        if (spawnChance > 1)
-            spawnChance = 1;
+        spawnChance.x += getIncreaseSpawnChancePerSecond();
+        if (spawnChance.x > 1)
+            spawnChance.x = 1;
     }
 
     public float getIncreaseSpawnChancePerSecond()
     {
-        return increaseSpawnChancePerSecond;
+        return increaseSpawnChancePerSecond.x;
     }
 
     public float getSpawnChance()
     {
-        return spawnChance;
+        return spawnChance.x;
     }
 
     private void instantiateCrunchie()
@@ -95,7 +103,7 @@ public class CrunchieSpawner : MonoBehaviour
             newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
             newCrunchie.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = facesBoss[Random.Range(0, facesBoss.Length)];
 
-            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond);
+            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
         }
         else if (randomVal <= getSpawnChance())
         {
@@ -105,7 +113,7 @@ public class CrunchieSpawner : MonoBehaviour
                 newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
                 newCrunchie.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = faces[Random.Range(0, faces.Length)];
 
-                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond);
+                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
             }
             else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal).getSpawnChance())//spawnhandling for nomal crunchie
             {
@@ -117,9 +125,9 @@ public class CrunchieSpawner : MonoBehaviour
                 newCrunchie.GetComponent<SpriteRenderer>().color = randColor;
                 newCrunchie.transform.GetChild(1).GetComponent<SpriteRenderer>().color = randColor;
 
-                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond);
-                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond);
-                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond);
+                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond.x);
+                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
+                updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
             }
         }
 
@@ -127,9 +135,9 @@ public class CrunchieSpawner : MonoBehaviour
         {
             newCrunchie.transform.position = randomSpawnpointOutOfCamView();
             newCrunchie.transform.parent = transform;
-            
+
             UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
-            
+
             instantiatedCrunchies.Add(newCrunchie.GetComponent<Crunchie>());
         }
 
@@ -143,9 +151,9 @@ public class CrunchieSpawner : MonoBehaviour
             newCrunchie.GetComponent<SpriteRenderer>().color = randColor;
             newCrunchie.transform.GetChild(1).GetComponent<SpriteRenderer>().color = randColor;
 
-            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond);
-            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond);
-            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond);
+            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond.x);
+            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
+            updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
 
             newCrunchie.transform.position = randomSpawnpointOutOfCamView();
             newCrunchie.transform.parent = transform;

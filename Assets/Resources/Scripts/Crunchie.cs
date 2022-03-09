@@ -62,11 +62,11 @@ public class Crunchie : MonoBehaviour
             //if boss killed
             if (hitpoints.x <= 0)
             {
-                GameHandler.addScore((ulong)(hitpoints.y * 2));
+                GameHandler.addScore((System.Int32)(hitpoints.y * 2));
                 GameHandler.addDestroyed(1);
 
                 death();
-                GameHandler.setMulti();
+                GameHandler.setCombo();
             }
             else
             {
@@ -85,9 +85,12 @@ public class Crunchie : MonoBehaviour
                         clickPosition = Camera.main.ScreenToWorldPoint(clickPosition);
                         break;
                     case RuntimePlatform.Android:
-                        clickPosition = Input.GetTouch(0).position;
-                        clickPosition.z = 10.0f;
-                        clickPosition = Camera.main.ScreenToWorldPoint(clickPosition);
+                        if (Input.touchCount > 0)
+                        {
+                            clickPosition = Input.GetTouch(0).position;
+                            clickPosition.z = 10.0f;
+                            clickPosition = Camera.main.ScreenToWorldPoint(clickPosition);
+                        }
                         break;
                     default:
                         break;
@@ -106,7 +109,7 @@ public class Crunchie : MonoBehaviour
                 GameHandler.addDestroyed(1);
 
                 death();
-                GameHandler.setMulti();
+                GameHandler.setCombo();
             }
         }
     }
@@ -121,21 +124,17 @@ public class Crunchie : MonoBehaviour
 
     public void updateCall()
     {
-        if (!GameHandler.isGameOver && !GameHandler.isPaused)
+        if (!GameHandler.isGameOver && !GameHandler.isPaused)//
         {
             //moving
             transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * UltimateMode.instance.currentMultiplier);
 
-            //set has reached the finish line
+            //check crunchie reached finish line
             if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
             {
                 passedFinishLine = true;
                 GameHandler.addLife((int)-hitpoints.x);
             }
-
-            //Remove when out of bottom cam view
-            if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
-                CrunchieSpawner.removeCrunchie(this);
         }
         else if (GameHandler.isGameOver)//on gameover crunchie run faster
         {
@@ -147,11 +146,11 @@ public class Crunchie : MonoBehaviour
             {
                 passedFinishLine = true;
             }
-
-            //Remove when out of bottom cam view
-            if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
-                CrunchieSpawner.removeCrunchie(this);
         }
+
+        //Remove when out of bottom cam view
+        if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
+            CrunchieSpawner.removeCrunchie(this);
     }
 
     public void setUltimateMode(Sprite face)

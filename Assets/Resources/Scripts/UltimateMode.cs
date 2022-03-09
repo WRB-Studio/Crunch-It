@@ -10,28 +10,28 @@ public class UltimateMode : MonoBehaviour
         None, light, medium, full
     }
 
+    [Header("Multiplier")]
     public eUltimateModes currentMode = eUltimateModes.None;
-
     public float currentMultiplier = 1;
     public float multiplierLight = 2;
     public float multiplierMedium = 4;
     public float multiplierFull = 6;
 
+    [Header("start values")]
     public int lightModeAt = 10;
     public int mediumModeAt = 25;
     public int fullModeAt = 50;
 
+    [Header("ultimate kill values")]
+    public int ultimateKills = 0;
+    public int ultimateSmasherByKills = 2;
+    public GameObject ultimateSmashPrefab;
+    public Image imgUltimateFrame;
+
+    [Header("Crunchie designs")]
     public Sprite lightFace;
     public Sprite mediumFace;
     public Sprite fullFace;
-
-    public int ultimateKills = 0;
-    public int ultimateSmasherByKills = 10;
-
-    public GameObject ultimateSmashPrefab;
-
-    public Image imgUltimateFrame;
-    private Color frameOriginColor;
 
     public static UltimateMode instance;
 
@@ -40,24 +40,53 @@ public class UltimateMode : MonoBehaviour
     private void Awake()
     {
         instance = this;
-        frameOriginColor = imgUltimateFrame.color;
     }
+
+    public static void init()
+    {
+        instance.currentMode = eUltimateModes.None;
+
+        instance.currentMultiplier = 1;
+
+        instance.ultimateKills = 0;
+
+        updateCall();
+    }
+
+    public static void updateCall()
+    {
+        if (GameHandler.comboCounter > 0)
+        {
+            Color tmpColor = instance.imgUltimateFrame.color;
+            tmpColor.a = Mathf.Lerp(0, 1, (float)GameHandler.comboCounter / instance.fullModeAt);
+            instance.imgUltimateFrame.color = tmpColor;
+        }
+        else
+        {
+            Color tmpColor = instance.imgUltimateFrame.color;
+            tmpColor.a = 0;
+            instance.imgUltimateFrame.color = tmpColor;
+        }
+
+        instance.checkUltimateModes();
+    }
+
 
     public void checkUltimateModes()
     {
-        if (currentMode != eUltimateModes.None && GameHandler.multiCounter < lightModeAt)
+        if (currentMode != eUltimateModes.None && GameHandler.comboCounter < lightModeAt)
         {
             setUltimateMode(eUltimateModes.None);
         }
-        else if (currentMode != eUltimateModes.light && GameHandler.multiCounter >= lightModeAt && GameHandler.multiCounter < mediumModeAt)
+        else if (currentMode != eUltimateModes.light && GameHandler.comboCounter >= lightModeAt && GameHandler.comboCounter < mediumModeAt)
         {
             setUltimateMode(eUltimateModes.light);
         }
-        else if (currentMode != eUltimateModes.medium && GameHandler.multiCounter >= mediumModeAt && GameHandler.multiCounter < fullModeAt)
+        else if (currentMode != eUltimateModes.medium && GameHandler.comboCounter >= mediumModeAt && GameHandler.comboCounter < fullModeAt)
         {
             setUltimateMode(eUltimateModes.medium);
         }
-        else if (currentMode != eUltimateModes.full && GameHandler.multiCounter >= fullModeAt)
+        else if (currentMode != eUltimateModes.full && GameHandler.comboCounter >= fullModeAt)
         {
             setUltimateMode(eUltimateModes.full);
         }
@@ -120,10 +149,10 @@ public class UltimateMode : MonoBehaviour
             case eUltimateModes.None:
                 break;
             case eUltimateModes.light:
-                newSmasher.transform.localScale *= 0.8f;
+                newSmasher.transform.localScale *= 0.6f;
                 break;
             case eUltimateModes.medium:
-                newSmasher.transform.localScale *= 1.0f;
+                newSmasher.transform.localScale *= 0.8f;
                 break;
             case eUltimateModes.full:
                 newSmasher.transform.localScale *= 1.2f;
@@ -132,25 +161,6 @@ public class UltimateMode : MonoBehaviour
                 break;
         }
         Destroy(newSmasher, 3);
-    }
-
-    private void Update()
-    {
-        frameHandling();
-    }
-
-    public void frameHandling()
-    {
-        if (GameHandler.multiCounter > 0)
-        {
-            Color tmpColor = imgUltimateFrame.color;
-            tmpColor.a = Mathf.Lerp(0, 1, (float)GameHandler.multiCounter / fullModeAt);
-            imgUltimateFrame.color = tmpColor;
-        }
-        else
-        {
-            imgUltimateFrame.color = frameOriginColor;
-        }
     }
 
     private void cancelUltimateMode()
