@@ -24,8 +24,11 @@ public class Crunchie : MonoBehaviour
     public Sprite originFace;
 
 
+
     private void Start()
     {
+        transform.localScale *= CrunchieSpawner.instance.crunchieSizeMultiplier; 
+
         curMinMaxSpeed.x = Random.Range(curMinMaxSpeed.y, curMinMaxSpeed.z);
 
         if (crunchieType == eCrunchieTypes.Boss)
@@ -33,6 +36,9 @@ public class Crunchie : MonoBehaviour
             hitpoints.x = Mathf.RoundToInt(GameHandler.curDestroyed / spawnAfterKills);
             if (hitpoints.x < 2)
                 hitpoints.x = 2;
+
+            float tmpScale = Mathf.Clamp(1 + hitpoints.x / 30, transform.localScale.x, 2);
+            transform.localScale *= tmpScale;
         }
 
         originColor = GetComponent<SpriteRenderer>().color;
@@ -124,7 +130,7 @@ public class Crunchie : MonoBehaviour
             if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
             {
                 passedFinishLine = true;
-                GameHandler.addLife(-1);
+                GameHandler.addLife((int)-hitpoints.x);
             }
 
             //Remove when out of bottom cam view

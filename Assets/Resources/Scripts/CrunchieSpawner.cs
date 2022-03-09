@@ -4,12 +4,14 @@ using UnityEngine;
 
 public class CrunchieSpawner : MonoBehaviour
 {
+    public float crunchieSizeMultiplier = 1;
+    public float spawnChance = 0.2f;
+    public float increaseSpawnChancePerSecond = 0.01f;
+
     public Sprite[] faces;
     public Sprite[] facesBoss;
     public Sprite[] bodys;
     public List<Crunchie> crunchiePrefabs;
-    public float spawnChance = 0.2f;
-    public float increaseSpawnChancePerSecond = 0.01f;
 
     private static List<Crunchie> instantiatedCrunchies = new List<Crunchie>();
 

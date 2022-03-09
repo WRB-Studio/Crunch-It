@@ -18,9 +18,10 @@ public class GameHandler : MonoBehaviour
     public static ulong curScore = 0;
     public static int curDestroyed = 0;
     public static int curLifes = 3;
-    public static int addLifeAtMultiCount = 5;
+
+    public int addLifeAtMultiCount = 5;
     public static int addLifeCounter = 0;
-    public static float multiDelay = 0.5f;
+    public float multiDelay = 0.5f;
     private static float multiDelayCountDown = 0;
     public static int multiCounter = 0;
     private static int curBestMultiplier = 0;
@@ -42,9 +43,12 @@ public class GameHandler : MonoBehaviour
     private static Button btReplay;
     private static Button btExit;
 
-    private static Text txtBestScore;
-    private static Text txtBestMultiplier;
-    private static Text txtBestMultiplierScore;
+    public Text txtYOUScore;
+    public Text txtYOUMultiplier;
+    public Text txtYOUMultiplierScore;
+    public Text txtBestScore;
+    public Text txtBestMultiplier;
+    public Text txtBestMultiplierScore;
 
     private static EventSystem myEventSystem;
 
@@ -81,10 +85,6 @@ public class GameHandler : MonoBehaviour
         btContinue = GameObject.Find("BtContinue").GetComponent<Button>();
         btReplay = GameObject.Find("BtReplay").GetComponent<Button>();
         btExit = GameObject.Find("BtExit").GetComponent<Button>();
-
-        txtBestScore = GameObject.Find("txtBestScore").GetComponent<Text>();
-        txtBestMultiplier = GameObject.Find("txtBestMultiplier").GetComponent<Text>();
-        txtBestMultiplierScore = GameObject.Find("txtBestMultiplierScore").GetComponent<Text>();
 
         multiPanel.gameObject.SetActive(false);
 
@@ -167,21 +167,23 @@ public class GameHandler : MonoBehaviour
             multiPanel.gameObject.SetActive(false);
         }
 
-        multiDelayCountDown = multiDelay;
+        multiDelayCountDown = instance.multiDelay;
 
         //display multiplier
         multiCounter++;
         if (multiCounter > 1)
         {
             multiPanel.gameObject.SetActive(true);
+            multiPanel.GetComponent<Animator>().Play("MultiAdd");
             txtMulti.text = multiCounter.ToString() + "X";
         }
 
         //add life after n succesfull multi clicks
         addLifeCounter++;
-        if (addLifeCounter == addLifeAtMultiCount)
+        if (addLifeCounter == instance.addLifeAtMultiCount)
         {
             addLife(1);
+            multiPanel.GetComponent<Animator>().Play("MultiAdd");
             addLifeCounter = 0;
         }
 
@@ -232,7 +234,7 @@ public class GameHandler : MonoBehaviour
             pauseMenue.SetActive(true);
             isPaused = true;
 
-            loadShowBestScores();
+            loadShowScores();
         }
     }
 
@@ -248,18 +250,24 @@ public class GameHandler : MonoBehaviour
             pauseMenue.SetActive(true);
             isPaused = true;
 
-            loadShowBestScores();
+            loadShowScores();
         }
     }
 
-    private static void loadShowBestScores()
+    private static void loadShowScores()
     {
         ulong loadedBestScore = SaveLoadData.loadBestScore();
         int loadedBestMultiplier = SaveLoadData.loadBestMultiplier();
         ulong loadedBestMultiplierScore = SaveLoadData.loadBestMultiplierScore();
-        txtBestScore.text = "Score: " + loadedBestScore;
-        txtBestMultiplier.text = "Multiplier: " + loadedBestMultiplier + "X";
-        txtBestMultiplierScore.text = "Multiplier score: " + loadedBestMultiplierScore;
+
+        instance.txtYOUScore.text = curScore.ToString();
+        instance.txtBestScore.text = loadedBestScore.ToString();
+
+        instance.txtYOUMultiplier.text = curBestMultiplier + "x";
+        instance.txtBestMultiplier.text = loadedBestMultiplier.ToString();
+
+        instance.txtYOUMultiplierScore.text = curBestMultiplierScore.ToString();
+        instance.txtBestMultiplierScore.text = loadedBestMultiplierScore.ToString();
     }
 
     private static void loadSaveShowBestScores()
@@ -268,35 +276,24 @@ public class GameHandler : MonoBehaviour
         int loadedBestMultiplier = SaveLoadData.loadBestMultiplier();
         ulong loadedBestMultiplierScore = SaveLoadData.loadBestMultiplierScore();
 
+        instance.txtYOUScore.text = curScore.ToString();
+        instance.txtBestScore.text = loadedBestScore.ToString();
+
+        instance.txtYOUMultiplier.text = curBestMultiplier + "x";
+        instance.txtBestMultiplier.text = loadedBestMultiplier.ToString();
+
+        instance.txtYOUMultiplierScore.text = curBestMultiplierScore.ToString();
+        instance.txtBestMultiplierScore.text = loadedBestMultiplierScore.ToString();
+
         if (loadedBestScore < curScore)
-        {
-            txtBestScore.text = "Score: " + curScore;
             SaveLoadData.saveBestScore(curScore);
-        }
-        else
-        {
-            txtBestScore.text = "Score: " + loadedBestScore;
-        }
 
         if (loadedBestMultiplier < curBestMultiplier)
-        {
-            txtBestMultiplier.text = "Multiplier: " + curBestMultiplier + "X";
             SaveLoadData.saveBestMultiplier(curBestMultiplier);
-        }
-        else
-        {
-            txtBestMultiplier.text = "Multiplier: " + loadedBestMultiplier;
-        }
 
         if (loadedBestMultiplierScore < curBestMultiplierScore)
-        {
-            txtBestMultiplierScore.text = "Multiplier score: " + curBestMultiplierScore;
             SaveLoadData.saveBestMultiplierScore(curBestMultiplierScore);
-        }
-        else
-        {
-            txtBestMultiplierScore.text = "Multiplier score: " + loadedBestMultiplierScore;
-        }
+
     }
 
     public static bool getIsPause()
@@ -386,5 +383,5 @@ public class GameHandler : MonoBehaviour
         curLifes += newLifeValue;
         txtHealth.text = curLifes.ToString();
     }
-        
+
 }

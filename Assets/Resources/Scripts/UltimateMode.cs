@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UltimateMode : MonoBehaviour
 {
@@ -29,6 +30,9 @@ public class UltimateMode : MonoBehaviour
 
     public GameObject ultimateSmashPrefab;
 
+    public Image imgUltimateFrame;
+    private Color frameOriginColor;
+
     public static UltimateMode instance;
 
 
@@ -36,6 +40,7 @@ public class UltimateMode : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        frameOriginColor = imgUltimateFrame.color;
     }
 
     public void checkUltimateModes()
@@ -115,10 +120,10 @@ public class UltimateMode : MonoBehaviour
             case eUltimateModes.None:
                 break;
             case eUltimateModes.light:
-                newSmasher.transform.localScale *= 1;
+                newSmasher.transform.localScale *= 0.8f;
                 break;
             case eUltimateModes.medium:
-                newSmasher.transform.localScale *= 1.1f;
+                newSmasher.transform.localScale *= 1.0f;
                 break;
             case eUltimateModes.full:
                 newSmasher.transform.localScale *= 1.2f;
@@ -126,7 +131,26 @@ public class UltimateMode : MonoBehaviour
             default:
                 break;
         }
-            Destroy(newSmasher, 3);
+        Destroy(newSmasher, 3);
+    }
+
+    private void Update()
+    {
+        frameHandling();
+    }
+
+    public void frameHandling()
+    {
+        if (GameHandler.multiCounter > 0)
+        {
+            Color tmpColor = imgUltimateFrame.color;
+            tmpColor.a = Mathf.Lerp(0, 1, (float)GameHandler.multiCounter / fullModeAt);
+            imgUltimateFrame.color = tmpColor;
+        }
+        else
+        {
+            imgUltimateFrame.color = frameOriginColor;
+        }
     }
 
     private void cancelUltimateMode()
