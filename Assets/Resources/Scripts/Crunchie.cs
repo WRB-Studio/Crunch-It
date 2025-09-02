@@ -62,43 +62,17 @@ public class Crunchie : MonoBehaviour
             //if boss killed
             if (hitpoints.x <= 0)
             {
-                GameHandler.addScore((System.Int32)(hitpoints.y * 2));
+                GameHandler.addScore(Mathf.RoundToInt(hitpoints.y * 2));
                 GameHandler.addDestroyed(1);
 
                 death();
-                GameHandler.setCombo();
             }
-            else
+            else //if boss have hitpoints
             {
-                //animation when boss clicked and not destroyed
-                Vector3 clickPosition = transform.position;
-                switch (Application.platform)
-                {
-                    case RuntimePlatform.WindowsPlayer:
-                        clickPosition = Input.mousePosition;
-                        clickPosition.z = 10.0f;
-                        clickPosition = Camera.main.ScreenToWorldPoint(clickPosition);
-                        break;
-                    case RuntimePlatform.WindowsEditor:
-                        clickPosition = Input.mousePosition;
-                        clickPosition.z = 10.0f;
-                        clickPosition = Camera.main.ScreenToWorldPoint(clickPosition);
-                        break;
-                    case RuntimePlatform.Android:
-                        if (Input.touchCount > 0)
-                        {
-                            clickPosition = Input.GetTouch(0).position;
-                            clickPosition.z = 10.0f;
-                            clickPosition = Camera.main.ScreenToWorldPoint(clickPosition);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-
+                // Animation when boss is clicked and not destroyed
                 StaticAudioHandler.playSound(crunchSounds[Random.Range(0, crunchSounds.Length)], "tmpCrunchSound", 0.8f, 0.2f);
-                GameObject newBosClickAnimation = Instantiate(bossClickAnim, clickPosition, Quaternion.Euler(0, 0, Random.Range(0, 359)), transform.parent);
-                bossClickAnim.GetComponent<SpriteRenderer>().color = GetComponent<SpriteRenderer>().color;
+                GameObject newBossClickAnimation = Instantiate(bossClickAnim, getClickPosition(), Quaternion.Euler(0, 0, Random.Range(0, 359)), transform.parent);
+                newBossClickAnimation.GetComponent<SpriteRenderer>().color = GetComponent<SpriteRenderer>().color;
             }
         }
         else//if not a boss
@@ -122,62 +96,71 @@ public class Crunchie : MonoBehaviour
         CrunchieSpawner.removeCrunchie(this);
     }
 
+    private Vector3 getClickPosition()
+    {
+        Vector3 position = transform.position;
+        switch (Application.platform)
+        {
+            case RuntimePlatform.WindowsPlayer:
+            case RuntimePlatform.WindowsEditor:
+            case RuntimePlatform.Android:
+                if (Application.isMobilePlatform && Input.touchCount > 0)
+                {
+                    position = new Vector3(Input.GetTouch(0).position.x, Input.GetTouch(0).position.y, 10.0f);
+                }
+                else
+                {
+                    position = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 10.0f);
+                }
+                return Camera.main.ScreenToWorldPoint(position);
+            default:
+                return position;
+        }
+    }
+
     public void updateCall()
     {
-        if (!GameHandler.isGameOver && !GameHandler.isPaused)//
+        if (!GameHandler.isGameOver)
         {
-            //moving
-            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * UltimateMode.instance.currentMultiplier);
+            float speedModifier = GameHandler.isPaused ? 0 : (GameHandler.isGameOver ? 1.5f : 1.0f);
+            // Update position
+            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * speedModifier * UltimateMode.instance.currentMultiplier);
 
-            //check crunchie reached finish line
+            // Check if Crunchie has passed the finish line
             if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
             {
                 passedFinishLine = true;
-                GameHandler.addLife((int)-hitpoints.x);
-            }
-        }
-        else if (GameHandler.isGameOver)//on gameover crunchie run faster
-        {
-            //moving
-            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * 1.5f * UltimateMode.instance.currentMultiplier);
-
-            //set has reached the finish line
-            if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
-            {
-                passedFinishLine = true;
+                if (!GameHandler.isPaused) // Only adjust life if the game is not paused
+                    GameHandler.addLife((int)-hitpoints.x);
             }
         }
 
-        //Remove when out of bottom cam view
+        // Remove Crunchie if it is out of the camera view
         if (CrunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
             CrunchieSpawner.removeCrunchie(this);
     }
 
     public void setUltimateMode(Sprite face)
     {
+        SpriteRenderer mainRenderer = GetComponent<SpriteRenderer>();
+        SpriteRenderer childRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
+
         if (face == null)
         {
-            GetComponent<SpriteRenderer>().color = originColor;
-            transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = originFace;
+            mainRenderer.color = originColor;
+            childRenderer.sprite = originFace;
         }
         else
         {
-            Color tmpColor = GetComponent<SpriteRenderer>().color;
+            Color tmpColor = mainRenderer.color;
             tmpColor.a = 1;
-            tmpColor.r += 0.02f;
-            tmpColor.g -= 0.03f;
-            tmpColor.b -= 0.03f;
-            GetComponent<SpriteRenderer>().color = tmpColor;
-            transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = face;
+            tmpColor.r = Mathf.Clamp01(tmpColor.r + 0.02f);  // Ensure the color values remain valid
+            tmpColor.g = Mathf.Clamp01(tmpColor.g - 0.03f);
+            tmpColor.b = Mathf.Clamp01(tmpColor.b - 0.03f);
+            mainRenderer.color = tmpColor;
+            childRenderer.sprite = face;
         }
     }
-
-
-    public float getSpawnChance()
-    {
-        return spawnChance;
-    }
-
 
     private void OnCollisionEnter2D(Collision2D collision)
     {

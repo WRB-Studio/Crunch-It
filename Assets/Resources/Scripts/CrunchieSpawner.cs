@@ -107,7 +107,7 @@ public class CrunchieSpawner : MonoBehaviour
         }
         else if (randomVal <= getSpawnChance())
         {
-            if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast).getSpawnChance())//spawnhandling for fast crunchie
+            if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast).spawnChance)//spawnhandling for fast crunchie
             {
                 newCrunchie = Instantiate(fastCrunchie.gameObject);
                 newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
@@ -115,7 +115,7 @@ public class CrunchieSpawner : MonoBehaviour
 
                 updateCrunchiePropertiers(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
             }
-            else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal).getSpawnChance())//spawnhandling for nomal crunchie
+            else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal).spawnChance)//spawnhandling for nomal crunchie
             {
                 newCrunchie = Instantiate(normalCrunchie.gameObject);
                 newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
