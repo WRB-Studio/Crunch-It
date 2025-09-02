@@ -13,6 +13,9 @@ public class CrunchieSpawner : MonoBehaviour
     public Sprite[] bodys;
     public List<Crunchie> crunchiePrefabs;
 
+    public Color colorSplitter;
+    public float splitterScale;
+
     private static List<Crunchie> instantiatedCrunchies = new List<Crunchie>();
 
     private static Bounds camBounds;
@@ -56,7 +59,7 @@ public class CrunchieSpawner : MonoBehaviour
     public void UpdateCall()
     {
         if (!GameHandler.isGameOver && !GameHandler.GetIsPause())
-            instance.instantiateCrunchie();
+            instance.InstantiateCrunchie();
 
         for (int i = 0; i < instantiatedCrunchies.ToArray().Length; i++)
         {
@@ -87,21 +90,19 @@ public class CrunchieSpawner : MonoBehaviour
         return spawnChance.x;
     }
 
-    private void instantiateCrunchie()
+    private GameObject InstantiateCrunchie()
     {
         float randomVal = Random.value * (UltimateMode.instance.currentMultiplier / 20);
         GameObject newCrunchie = null;
-        Color randColor;
 
         Crunchie normalCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal);
         Crunchie fastCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast);
         Crunchie bossCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Boss);
+        Crunchie splitterCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Splitter);
 
         if (GameHandler.curDestroyed > 0 && GameHandler.curDestroyed % bossCrunchie.spawnAfterKills == 0 && !checkCrunchieTypeIsSpawned(Crunchie.eCrunchieTypes.Boss))//spawnhandling for boss crunchie
         {
             newCrunchie = Instantiate(bossCrunchie.gameObject);
-            newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
-            newCrunchie.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = facesBoss[Random.Range(0, facesBoss.Length)];
 
             updateCrunchieProperties(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
         }
@@ -110,59 +111,77 @@ public class CrunchieSpawner : MonoBehaviour
             if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast).spawnChance)//spawnhandling for fast crunchie
             {
                 newCrunchie = Instantiate(fastCrunchie.gameObject);
-                newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
-                newCrunchie.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = faces[Random.Range(0, faces.Length)];
 
                 updateCrunchieProperties(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
+            }
+            else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Splitter).spawnChance)
+            {
+                newCrunchie = Instantiate(splitterCrunchie.gameObject);
+
+                updateCrunchieProperties(Crunchie.eCrunchieTypes.Splitter, increaseSpawnChancePerSecond.x);
             }
             else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal).spawnChance)//spawnhandling for nomal crunchie
             {
                 newCrunchie = Instantiate(normalCrunchie.gameObject);
-                newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
-                newCrunchie.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = faces[Random.Range(0, faces.Length)];
-
-                randColor = Random.ColorHSV(0.1f, 0.1f, 0.5f, 1f, 0.5f, 1f, 1f, 1f);
-                newCrunchie.GetComponent<SpriteRenderer>().color = randColor;
-                newCrunchie.transform.GetChild(1).GetComponent<SpriteRenderer>().color = randColor;
 
                 updateCrunchieProperties(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond.x);
                 updateCrunchieProperties(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
                 updateCrunchieProperties(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
+                updateCrunchieProperties(Crunchie.eCrunchieTypes.Splitter, increaseSpawnChancePerSecond.x);
             }
         }
 
-        if (newCrunchie != null)
-        {
-            newCrunchie.transform.position = randomSpawnpointOutOfCamView();
-            newCrunchie.transform.parent = transform;
-
-            UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
-
-            instantiatedCrunchies.Add(newCrunchie.GetComponent<Crunchie>());
-        }
-
-        if (instantiatedCrunchies.Count <= 0)
+        if (instantiatedCrunchies.Count <= 0 && newCrunchie == null)
         {
             newCrunchie = Instantiate(normalCrunchie.gameObject);
-            newCrunchie.GetComponent<SpriteRenderer>().sprite = bodys[Random.Range(0, bodys.Length)];
-            newCrunchie.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = faces[Random.Range(0, faces.Length)];
-
-            randColor = Random.ColorHSV(0.1f, 0.1f, 0.5f, 1f, 0.5f, 1f, 1f, 1f);
-            newCrunchie.GetComponent<SpriteRenderer>().color = randColor;
-            newCrunchie.transform.GetChild(1).GetComponent<SpriteRenderer>().color = randColor;
 
             updateCrunchieProperties(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond.x);
             updateCrunchieProperties(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
             updateCrunchieProperties(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
+            updateCrunchieProperties(Crunchie.eCrunchieTypes.Splitter, increaseSpawnChancePerSecond.x);
+        }
+
+        if (newCrunchie != null)
+        {
+            Sprite body = bodys[Random.Range(0, bodys.Length)];
+            Sprite face;
+
+            if (newCrunchie.GetComponent<Crunchie>().crunchieType == Crunchie.eCrunchieTypes.Boss)
+                face = facesBoss[Random.Range(0, facesBoss.Length)];
+            else
+                face = faces[Random.Range(0, faces.Length)];
 
             newCrunchie.transform.position = randomSpawnpointOutOfCamView();
             newCrunchie.transform.parent = transform;
 
-            UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
-
             instantiatedCrunchies.Add(newCrunchie.GetComponent<Crunchie>());
+
+            newCrunchie.GetComponent<Crunchie>().Init(body, face);
         }
+
+        return newCrunchie;
     }
+
+    public void SpawnAfterSplitterDeath(Vector2 deathPosition)
+    {
+        Crunchie normalCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal);
+
+        GameObject newCrunchie1 = Instantiate(normalCrunchie.gameObject);
+        GameObject newCrunchie2 = Instantiate(normalCrunchie.gameObject);
+
+        newCrunchie1.transform.position = deathPosition;
+        newCrunchie2.transform.position = deathPosition;
+
+        newCrunchie1.transform.parent = transform;
+        newCrunchie2.transform.parent = transform;
+
+        instantiatedCrunchies.Add(newCrunchie1.GetComponent<Crunchie>());
+        instantiatedCrunchies.Add(newCrunchie2.GetComponent<Crunchie>());
+
+        newCrunchie1.GetComponent<Crunchie>().Init(bodys[Random.Range(0, bodys.Length)], faces[Random.Range(0, faces.Length)], splitterScale);
+        newCrunchie2.GetComponent<Crunchie>().Init(bodys[Random.Range(0, bodys.Length)], faces[Random.Range(0, faces.Length)], splitterScale);
+    }
+
 
     public void updateCrunchieProperties(Crunchie.eCrunchieTypes crunchieType, float updateValue)
     {

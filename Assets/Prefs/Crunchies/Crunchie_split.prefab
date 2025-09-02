@@ -102,7 +102,7 @@ GameObject:
   - component: {fileID: 639154682899373411}
   - component: {fileID: 6789304105978654468}
   m_Layer: 0
-  m_Name: Crunchie_normal
+  m_Name: Crunchie_split
   m_TagString: Crunchy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -170,7 +170,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 2
   m_Sprite: {fileID: 21300000, guid: d1f0a2fdfcd4cce4fa86ff9a3a40d846, type: 3}
-  m_Color: {r: 1, g: 0.79041666, b: 0.49699998, a: 1}
+  m_Color: {r: 0.31837332, g: 0.7264151, b: 0.25698647, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -192,10 +192,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2256c23e0ee195458905d597a0c1dc1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crunchieType: 1
-  curMinMaxSpeed: {x: 0, y: 1, z: 1.3}
+  crunchieType: 4
+  curMinMaxSpeed: {x: 0, y: 1.2, z: 1.5}
   hitpoints: {x: 1, y: 1}
-  spawnChance: 1
+  spawnChance: 0.2
   spawnAfterKills: 0
   passedFinishLine: 0
   bossClickAnim: {fileID: 0}

@@ -90,7 +90,6 @@ public class GameHandler : MonoBehaviour
     }
 
 
-
     public void AddScore(Int32 addScore)
     {
         curScore += addScore;
@@ -122,8 +121,7 @@ public class GameHandler : MonoBehaviour
                 SetGameOver();
         }
     }
-
-    
+        
 
     public void SetCombo()
     {
@@ -186,7 +184,6 @@ public class GameHandler : MonoBehaviour
 
         Init();
     }
-
 
 
     private void SaveBestScores()
@@ -314,4 +311,5 @@ public class GameHandler : MonoBehaviour
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(UIManager.instance.scorePanel);
     }
+
 }

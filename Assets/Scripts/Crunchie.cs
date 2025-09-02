@@ -4,7 +4,7 @@ public class Crunchie : MonoBehaviour
 {
     public enum eCrunchieTypes
     {
-        None, Normal, Fast, Boss,
+        None, Normal, Fast, Boss, Splitter
     }
 
     public eCrunchieTypes crunchieType = eCrunchieTypes.None;
@@ -23,6 +23,10 @@ public class Crunchie : MonoBehaviour
     public Color originColor;
     public Sprite originFace;
 
+    private SpriteRenderer bodyRenderer;
+    private SpriteRenderer faceRenderer;
+    private SpriteRenderer legsRenderer;
+
     private GameHandler gameHandler;
     private CrunchieSpawner crunchieSpawner;
 
@@ -33,11 +37,29 @@ public class Crunchie : MonoBehaviour
         crunchieSpawner = CrunchieSpawner.instance;
     }
 
-    private void Start()
+    public void Init(Sprite body, Sprite face, float scale = 0f)
     {
-        transform.localScale *= CrunchieSpawner.instance.crunchieSizeMultiplier; 
+        bodyRenderer = GetComponent<SpriteRenderer>();
+        faceRenderer = transform.Find("Face").GetComponent<SpriteRenderer>();
+        legsRenderer = transform.Find("Legs").GetComponent<SpriteRenderer>();
+
+        if (scale > 0f)
+            transform.localScale = new Vector3(scale, scale, scale);
+        else
+            transform.localScale *= CrunchieSpawner.instance.crunchieSizeMultiplier;
 
         curMinMaxSpeed.x = Random.Range(curMinMaxSpeed.y, curMinMaxSpeed.z);
+
+        bodyRenderer.sprite = body;
+        faceRenderer.sprite = face;
+
+        // Randomize color
+        if (crunchieType == eCrunchieTypes.Normal)
+        {
+            Color randColor = Random.ColorHSV(0.1f, 0.1f, 0.5f, 1f, 0.5f, 1f, 1f, 1f);
+            bodyRenderer.color = randColor;
+            legsRenderer.color = randColor;
+        }
 
         if (crunchieType == eCrunchieTypes.Boss)
         {
@@ -49,8 +71,10 @@ public class Crunchie : MonoBehaviour
             transform.localScale *= tmpScale;
         }
 
-        originColor = GetComponent<SpriteRenderer>().color;
-        originFace = transform.GetChild(0).GetComponent<SpriteRenderer>().sprite;
+        originColor = bodyRenderer.color;
+        originFace = faceRenderer.sprite;
+
+        UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
     }
 
     private void OnMouseDown()
@@ -90,16 +114,19 @@ public class Crunchie : MonoBehaviour
                 gameHandler.AddScore(1);
                 gameHandler.AddDestroyed(1);
 
-                death();
                 gameHandler.SetCombo();
+                death();
             }
         }
     }
 
     public void death()
     {
+        if (crunchieType == eCrunchieTypes.Splitter)
+            CrunchieSpawner.instance.SpawnAfterSplitterDeath(transform.position);
+
         StaticAudioHandler.playSound(crunchSounds[Random.Range(0, crunchSounds.Length)], "tmpCrunchSound", 1, 0.2f);
-        GameObject newExplosion = Instantiate(explosion, transform.position, Quaternion.Euler(0, 0, Random.Range(0, 359)), transform.parent);
+        GameObject newExplosion = Instantiate(explosion, transform.position, Quaternion.Euler(0, 0, Random.Range(0, 359)), GameObject.Find("ExplosionsParent").transform);
         explosion.GetComponent<SpriteRenderer>().color = GetComponent<SpriteRenderer>().color;
         crunchieSpawner.removeCrunchie(this);
     }
