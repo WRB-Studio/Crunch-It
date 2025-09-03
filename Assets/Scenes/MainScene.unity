@@ -1536,7 +1536,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -47.553608}
+  m_AnchoredPosition: {x: 0, y: -47.55371}
   m_SizeDelta: {x: 0, y: -95.1072}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &453871324
@@ -2598,8 +2598,8 @@ MonoBehaviour:
   multiplierMedium: 1.25
   multiplierFull: 1.5
   lightModeAt: 6
-  mediumModeAt: 12
-  fullModeAt: 20
+  mediumModeAt: 11
+  fullModeAt: 17
   ultimateKills: 0
   ultimateSmasherByKills: 3
   ultimateSmashPrefab: {fileID: 4963354261479608783, guid: 8975109940662e3479c2a2c43abb6714,
@@ -4972,7 +4972,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 2.1799927, y: -3.5900269}
   m_SizeDelta: {x: 40, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &4134714855127405470
