@@ -4,7 +4,7 @@
 <p>
 A mini android game where you kill cute little crunchies with your fingers.<br> Tap them to kill them.
 </p>
-Available on Google Play <a href="[https://github.com/WRB-Studio/Crunch-It/tree/main/Assets/Resources/Builds/Android](https://play.google.com/store/apps/details?id=com.WRBStudio.CrunchIt&pli=1)">Crunch-It</a>.
+Available on Google Play <a href="https://play.google.com/store/apps/details?id=com.WRBStudio.CrunchIt&pli=1">Crunch-It</a>.
 <br>
 <br>
 
