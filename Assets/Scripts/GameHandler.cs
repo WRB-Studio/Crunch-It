@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -285,36 +285,61 @@ public class GameHandler : MonoBehaviour
 
     private IEnumerator AddLifeAnimation()
     {
-        Vector2 inputPosition;
-        if (Application.platform == RuntimePlatform.Android && Input.touchCount > 0)
-            inputPosition = Input.GetTouch(0).position;
-        else
-            inputPosition = Input.mousePosition;
+        Vector2 inputPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+        RectTransform heart = GameObject.Find("ImgHearth").GetComponent<RectTransform>();
+        Canvas canvas = heart.GetComponentInParent<Canvas>().rootCanvas;
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+        Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, inputPosition, uiCamera, out Vector2 startPosition);
 
-        GameObject lifeReference = GameObject.Find("ImgHearth");
-        GameObject newLife = Instantiate(lifeReference, GameObject.Find("ImgHearth").transform);
-        lifeAnimations.Add(newLife);
-        newLife.transform.position = inputPosition;
-        newLife.transform.localScale = new Vector3(newLife.transform.localScale.x * 2, newLife.transform.localScale.y * 2, newLife.transform.localScale.z * 2);
+        RectTransform reward = Instantiate(heart, canvasRect, false);
+        reward.name = "LifeReward";
+        lifeAnimations.Add(reward.gameObject);
+        reward.GetComponent<Image>().raycastTarget = false;
+        reward.anchorMin = reward.anchorMax = new Vector2(0.5f, 0.5f);
+        reward.pivot = new Vector2(0.5f, 0.5f);
+        reward.sizeDelta = new Vector2(heart.rect.width * heart.lossyScale.x / canvasRect.lossyScale.x,
+            heart.rect.height * heart.lossyScale.y / canvasRect.lossyScale.y);
+        reward.SetAsLastSibling();
 
-        float animationSpeed = 0.4f;
-        float curTime = 0;
-
-        while (Vector2.Distance(newLife.transform.position, lifeReference.transform.position) > 0.1f)
-        {
-            yield return null;
-
-            curTime += Time.deltaTime / animationSpeed;
-            newLife.transform.position = Vector3.Lerp(inputPosition, lifeReference.transform.position, curTime);
-            newLife.transform.localScale = Vector3.Lerp(newLife.transform.localScale, Vector3.one, curTime);
-        }
-
-        Destroy(newLife);
-        lifeAnimations.Remove(newLife);
+        Vector2 margin = reward.sizeDelta * 1.25f;
+        startPosition.x = Mathf.Clamp(startPosition.x, canvasRect.rect.xMin + margin.x, canvasRect.rect.xMax - margin.x);
+        startPosition.y = Mathf.Clamp(startPosition.y, canvasRect.rect.yMin + margin.y, canvasRect.rect.yMax - margin.y - 100f);
+        Vector2 raisedPosition = startPosition + Vector2.up * 100f;
+        reward.anchoredPosition = startPosition;
+        reward.localScale = Vector3.one * 0.5f;
         StaticAudioHandler.playSound(addLifeSound, "tmpAddLife", 1, 0, -0.5f);
 
-    }
+        // Pop above the finger before flying to the life counter.
+        float elapsed = 0;
+        while (elapsed < 0.45f)
+        {
+            float progress = Mathf.Clamp01(elapsed / 0.45f);
+            float scale = elapsed < 0.16f
+                ? Mathf.Lerp(0.5f, 2.5f, Mathf.SmoothStep(0, 1, elapsed / 0.16f))
+                : Mathf.Lerp(2.5f, 2.2f, Mathf.SmoothStep(0, 1, (elapsed - 0.16f) / 0.29f));
+            reward.localScale = Vector3.one * scale;
+            reward.anchoredPosition = Vector2.Lerp(startPosition, raisedPosition, Mathf.SmoothStep(0, 1, progress));
+            yield return null;
+            elapsed += Time.unscaledDeltaTime;
+        }
 
+        elapsed = 0;
+        while (elapsed < 0.65f)
+        {
+            float progress = Mathf.SmoothStep(0, 1, elapsed / 0.65f);
+            Vector2 targetPosition = canvasRect.InverseTransformPoint(heart.TransformPoint(heart.rect.center));
+            Vector2 controlPosition = (raisedPosition + targetPosition) * 0.5f + Vector2.up * 70f;
+            reward.anchoredPosition = Vector2.Lerp(Vector2.Lerp(raisedPosition, controlPosition, progress),
+                Vector2.Lerp(controlPosition, targetPosition, progress), progress);
+            reward.localScale = Vector3.one * Mathf.Lerp(2.2f, 1f, progress);
+            yield return null;
+            elapsed += Time.unscaledDeltaTime;
+        }
+
+        lifeAnimations.Remove(reward.gameObject);
+        Destroy(reward.gameObject);
+    }
 
     public static void SetPaused(bool paused)
     {
