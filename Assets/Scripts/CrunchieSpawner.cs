@@ -1,4 +1,3 @@
-﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,6 +22,10 @@ public class CrunchieSpawner : MonoBehaviour
     public static Transform finishLine;
 
     public static CrunchieSpawner instance;
+    private const double spawnInterval = 1.0 / 30.0;
+    private double spawnElapsed;
+    private double difficultyElapsed;
+    private int lastBossSpawnKills;
 
 
 
@@ -33,35 +36,44 @@ public class CrunchieSpawner : MonoBehaviour
 
     public void Init()
     {
+        CancelInvoke();
         instance.spawnChance.x = instance.spawnChance.y;
+        instance.increaseSpawnChancePerSecond.x = instance.increaseSpawnChancePerSecond.y;
+        spawnElapsed = 0;
+        difficultyElapsed = 0;
+        lastBossSpawnKills = 0;
 
         for (int i = 0; i < instantiatedCrunchies.Count; i++)
         {
-            Destroy(instantiatedCrunchies[i].gameObject);
+            if (instantiatedCrunchies[i] != null)
+            {
+                instantiatedCrunchies[i].gameObject.SetActive(false);
+                Destroy(instantiatedCrunchies[i].gameObject);
+            }
         }
 
-        instantiatedCrunchies = new List<Crunchie>();
-
-
-        if (Application.platform != RuntimePlatform.Android)
+        instantiatedCrunchies.Clear();
+        foreach (Transform effect in transform)
         {
-            instance.increaseSpawnChancePerSecond.x = instance.increaseSpawnChancePerSecond.y / 8;
-            instance.spawnChance.x = instance.spawnChance.y / 20;
+            effect.gameObject.SetActive(false);
+            Destroy(effect.gameObject);
         }
+
+
 
         finishLine = GameObject.Find("FinishLine").transform;
 
         camBounds = instance.getCamBoundBoxPositions();
 
-        instance.InvokeRepeating("invokeIncreasePropabilitie", 1, 1);
     }
 
     public void UpdateCall()
     {
-        if (!GameHandler.isGameOver && !GameHandler.GetIsPause())
-            instance.InstantiateCrunchie();
+        if (GameHandler.isGameOver || GameHandler.GetIsPause())
+            return;
+        AdvanceSpawning(Time.deltaTime);
 
-        for (int i = 0; i < instantiatedCrunchies.ToArray().Length; i++)
+        for (int i = instantiatedCrunchies.Count - 1; i >= 0; i--)
         {
             if (instantiatedCrunchies[i] != null)
                 instantiatedCrunchies[i].updateCall();
@@ -70,7 +82,25 @@ public class CrunchieSpawner : MonoBehaviour
     }
 
 
-    private void invokeIncreasePropabilitie()
+    private void AdvanceSpawning(float deltaTime)
+    {
+        difficultyElapsed += deltaTime;
+        while (difficultyElapsed >= 1f)
+        {
+            difficultyElapsed -= 1f;
+            IncreaseSpawnChance();
+        }
+
+        // Use the same spawn rate on every platform and frame rate.
+        spawnElapsed += deltaTime;
+        while (spawnElapsed >= spawnInterval)
+        {
+            spawnElapsed -= spawnInterval;
+            InstantiateCrunchie();
+        }
+    }
+
+    private void IncreaseSpawnChance()
     {
         if (GameHandler.GetGameOver() || GameHandler.GetIsPause())
             return;
@@ -100,45 +130,30 @@ public class CrunchieSpawner : MonoBehaviour
         Crunchie bossCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Boss);
         Crunchie splitterCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Splitter);
 
-        if (GameHandler.curDestroyed > 0 && GameHandler.curDestroyed % bossCrunchie.spawnAfterKills == 0 && !checkCrunchieTypeIsSpawned(Crunchie.eCrunchieTypes.Boss))//spawnhandling for boss crunchie
+        if (GameHandler.curDestroyed > 0 && GameHandler.curDestroyed != lastBossSpawnKills && GameHandler.curDestroyed % bossCrunchie.spawnAfterKills == 0 && !checkCrunchieTypeIsSpawned(Crunchie.eCrunchieTypes.Boss))//spawnhandling for boss crunchie
         {
             newCrunchie = Instantiate(bossCrunchie.gameObject);
-
-            updateCrunchieProperties(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
+            lastBossSpawnKills = GameHandler.curDestroyed;
         }
         else if (randomVal <= getSpawnChance())
         {
             if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast).spawnChance)//spawnhandling for fast crunchie
             {
                 newCrunchie = Instantiate(fastCrunchie.gameObject);
-
-                updateCrunchieProperties(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
             }
             else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Splitter).spawnChance)
             {
                 newCrunchie = Instantiate(splitterCrunchie.gameObject);
-
-                updateCrunchieProperties(Crunchie.eCrunchieTypes.Splitter, increaseSpawnChancePerSecond.x);
             }
             else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal).spawnChance)//spawnhandling for nomal crunchie
             {
                 newCrunchie = Instantiate(normalCrunchie.gameObject);
-
-                updateCrunchieProperties(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond.x);
-                updateCrunchieProperties(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
-                updateCrunchieProperties(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
-                updateCrunchieProperties(Crunchie.eCrunchieTypes.Splitter, increaseSpawnChancePerSecond.x);
             }
         }
 
         if (instantiatedCrunchies.Count <= 0 && newCrunchie == null)
         {
             newCrunchie = Instantiate(normalCrunchie.gameObject);
-
-            updateCrunchieProperties(Crunchie.eCrunchieTypes.Normal, increaseSpawnChancePerSecond.x);
-            updateCrunchieProperties(Crunchie.eCrunchieTypes.Fast, increaseSpawnChancePerSecond.x);
-            updateCrunchieProperties(Crunchie.eCrunchieTypes.Boss, increaseSpawnChancePerSecond.x);
-            updateCrunchieProperties(Crunchie.eCrunchieTypes.Splitter, increaseSpawnChancePerSecond.x);
         }
 
         if (newCrunchie != null)
@@ -183,18 +198,6 @@ public class CrunchieSpawner : MonoBehaviour
     }
 
 
-    public void updateCrunchieProperties(Crunchie.eCrunchieTypes crunchieType, float updateValue)
-    {
-        Crunchie crunchie = getCrunchiePrefab(crunchieType);
-
-        int destroyedCrunchies = GameHandler.curDestroyed;
-
-        if (destroyedCrunchies <= 0)
-            destroyedCrunchies = 1;
-
-        crunchie.curMinMaxSpeed.x *= getIncreaseSpawnChancePerSecond() * destroyedCrunchies;
-    }
-
     public bool checkCrunchieTypeIsSpawned(Crunchie.eCrunchieTypes crunchieType)
     {
         for (int i = 0; i < instantiatedCrunchies.Count; i++)
@@ -219,7 +222,9 @@ public class CrunchieSpawner : MonoBehaviour
 
     public void removeCrunchie(Crunchie crunchie)
     {
-        instantiatedCrunchies.Remove(crunchie);
+        if (!instantiatedCrunchies.Remove(crunchie))
+            return;
+        crunchie.gameObject.SetActive(false);
         Destroy(crunchie.gameObject);
     }
 
@@ -240,7 +245,6 @@ public class CrunchieSpawner : MonoBehaviour
             new Vector3(cameraHeight * screenAspect, cameraHeight, 0));
 
         return bounds;
-        //Debug.Log("max x: " + bounds.max.x + "; max y: " + bounds.max.y + "; min x: " + bounds.min.x + "; min y: " + bounds.min.y);
     }
 
     public bool checkObjectIsOutOfCameraView(Vector3 objectPosition)

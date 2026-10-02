@@ -29,6 +29,7 @@ public class Crunchie : MonoBehaviour
 
     private GameHandler gameHandler;
     private CrunchieSpawner crunchieSpawner;
+    private bool isDead;
 
 
     private void Awake()
@@ -66,6 +67,7 @@ public class Crunchie : MonoBehaviour
             hitpoints.x = Mathf.RoundToInt(GameHandler.curDestroyed / spawnAfterKills);
             if (hitpoints.x < 2)
                 hitpoints.x = 2;
+            hitpoints.y = hitpoints.x;
 
             float tmpScale = Mathf.Clamp(1 + hitpoints.x / 30, transform.localScale.x, 2);
             transform.localScale *= tmpScale;
@@ -74,7 +76,7 @@ public class Crunchie : MonoBehaviour
         originColor = bodyRenderer.color;
         originFace = faceRenderer.sprite;
 
-        UltimateMode.instance.setUltimateMode(UltimateMode.instance.currentMode);
+        setUltimateMode(UltimateMode.instance.CurrentFace);
     }
 
     private void OnMouseDown()
@@ -87,6 +89,8 @@ public class Crunchie : MonoBehaviour
 
     private void onCrunchieClick()
     {
+        if (isDead || GameHandler.isPaused || GameHandler.isGameOver || passedFinishLine)
+            return;
         hitpoints.x -= 1;
 
         if (crunchieType == eCrunchieTypes.Boss)//if a boss crunchie
@@ -94,7 +98,7 @@ public class Crunchie : MonoBehaviour
             //if boss killed
             if (hitpoints.x <= 0)
             {
-                gameHandler.AddScore(Mathf.RoundToInt(hitpoints.y * 2));
+                gameHandler.AddScore(2);
                 gameHandler.AddDestroyed(1);
 
                 death();
@@ -122,12 +126,15 @@ public class Crunchie : MonoBehaviour
 
     public void death()
     {
+        if (isDead || GameHandler.isPaused || GameHandler.isGameOver)
+            return;
+        isDead = true;
         if (crunchieType == eCrunchieTypes.Splitter)
             CrunchieSpawner.instance.SpawnAfterSplitterDeath(transform.position);
 
         StaticAudioHandler.playSound(crunchSounds[Random.Range(0, crunchSounds.Length)], "tmpCrunchSound", 1, 0.2f);
         GameObject newExplosion = Instantiate(explosion, transform.position, Quaternion.Euler(0, 0, Random.Range(0, 359)), GameObject.Find("ExplosionsParent").transform);
-        explosion.GetComponent<SpriteRenderer>().color = GetComponent<SpriteRenderer>().color;
+        newExplosion.GetComponent<SpriteRenderer>().color = bodyRenderer.color;
         crunchieSpawner.removeCrunchie(this);
     }
 
@@ -155,19 +162,17 @@ public class Crunchie : MonoBehaviour
 
     public void updateCall()
     {
-        if (!GameHandler.isGameOver)
-        {
-            float speedModifier = GameHandler.isPaused ? 0 : (GameHandler.isGameOver ? 1.5f : 1.0f);
-            // Update position
-            transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * speedModifier * UltimateMode.instance.currentMultiplier);
+        if (GameHandler.isPaused || GameHandler.isGameOver || isDead)
+            return;
 
-            // Check if Crunchie has passed the finish line
-            if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
-            {
-                passedFinishLine = true;
-                if (!GameHandler.isPaused) // Only adjust life if the game is not paused
-                    gameHandler.AddLife((int)-hitpoints.x);
-            }
+        // Update position
+        transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * UltimateMode.instance.currentMultiplier);
+
+        // Check if Crunchie has passed the finish line
+        if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
+        {
+            passedFinishLine = true;
+            gameHandler.AddLife((int)-hitpoints.x);
         }
 
         // Remove Crunchie if it is out of the camera view
@@ -177,8 +182,8 @@ public class Crunchie : MonoBehaviour
 
     public void setUltimateMode(Sprite face)
     {
-        SpriteRenderer mainRenderer = GetComponent<SpriteRenderer>();
-        SpriteRenderer childRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
+        SpriteRenderer mainRenderer = bodyRenderer;
+        SpriteRenderer childRenderer = faceRenderer;
 
         if (face == null)
         {
@@ -187,7 +192,7 @@ public class Crunchie : MonoBehaviour
         }
         else
         {
-            Color tmpColor = mainRenderer.color;
+            Color tmpColor = originColor;
             tmpColor.a = 1;
             tmpColor.r = Mathf.Clamp01(tmpColor.r + 0.02f);  // Ensure the color values remain valid
             tmpColor.g = Mathf.Clamp01(tmpColor.g - 0.03f);
@@ -199,7 +204,7 @@ public class Crunchie : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.transform.tag == "UltimateSmash")
+        if (!passedFinishLine && collision.transform.CompareTag("UltimateSmash"))
         {
             death();
         }

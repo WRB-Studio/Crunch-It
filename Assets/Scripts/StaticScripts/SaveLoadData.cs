@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class SaveLoadData : MonoBehaviour
@@ -19,12 +17,17 @@ public class SaveLoadData : MonoBehaviour
 
     static public bool checkApplicationHasSaves()
     {
-        return PlayerPrefs.HasKey(KEY);
+        return PlayerPrefs.HasKey(KEY + keyname.bestScore) ||
+            PlayerPrefs.HasKey(KEY + keyname.bestCombo) ||
+            PlayerPrefs.HasKey(KEY + keyname.musicState) ||
+            PlayerPrefs.HasKey(KEY + keyname.soundState);
     }
 
     static public void removeAll()
     {
-        PlayerPrefs.DeleteAll();
+        foreach (keyname name in Enum.GetValues(typeof(keyname)))
+            PlayerPrefs.DeleteKey(KEY + name);
+        PlayerPrefs.Save();
     }
 
 

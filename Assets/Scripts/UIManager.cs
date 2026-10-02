@@ -47,7 +47,16 @@ public class UIManager : MonoBehaviour
 
     public void Init()
     {
+        StopAllCoroutines();
         gameHandler = GameHandler.instance;
+        foreach (Transform child in UIContent.transform)
+        {
+            if (child.name != comboScorePopupPrefab.name + "(Clone)") continue;
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+        foreach (Animator animator in UIContent.GetComponentInParent<Canvas>().GetComponentsInChildren<Animator>(true))
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
 
         instance.txtHealth.text = GameHandler.curLifes.ToString();
         instance.txtScore.text = GameHandler.curScore.ToString();
@@ -69,10 +78,15 @@ public class UIManager : MonoBehaviour
         btExit.onClick.AddListener(delegate { gameHandler.ExitGame(); });
 
         btPause.GetComponent<Button>().interactable = true;
+        btContinue.interactable = true;
+        Image continueImage = btContinue.transform.GetChild(0).GetComponent<Image>();
+        Color continueColor = continueImage.color;
+        continueColor.a = 1;
+        continueImage.color = continueColor;
 
         showScore(false);
 
-        pauseMenueShowHide();
+        pauseMenueShowHide(false);
     }
 
     public void UpdateCall()
@@ -82,41 +96,22 @@ public class UIManager : MonoBehaviour
 
     public void pauseMenueShowHide()
     {
-        instance.pauseMenuTitle.SetActive(true);
-        instance.gameOverMenuTitle.SetActive(false);
-
-        if (instance.pauseMenu.activeSelf)
-        {
-            instance.pauseMenu.SetActive(false);
-            GameHandler.isPaused = false;
-        }
-        else
-        {
-            instance.pauseMenu.SetActive(true);
-            GameHandler.isPaused = true;
-
-            showScore();
-        }
+        pauseMenueShowHide(!pauseMenu.activeSelf);
     }
 
     public void pauseMenueShowHide(bool show)
     {
-        if (!show)
-        {
-            instance.pauseMenu.SetActive(false);
-            GameHandler.isPaused = false;
-        }
-        else
-        {
-            instance.pauseMenu.SetActive(true);
-            GameHandler.isPaused = true;
-
-            showScore();
-        }
+        show |= GameHandler.isGameOver;
+        pauseMenuTitle.SetActive(!GameHandler.isGameOver);
+        gameOverMenuTitle.SetActive(GameHandler.isGameOver);
+        pauseMenu.SetActive(show);
+        GameHandler.SetPaused(show);
+        if (show) showScore();
     }
 
     public void showScore(bool playSound = true)
     {
+        StopAllCoroutines();
         Int32 loadedBestScore = SaveLoadData.loadBestScore();
         int loadedBestCombo = SaveLoadData.loadBestCombo();
 
@@ -131,7 +126,7 @@ public class UIManager : MonoBehaviour
     public IEnumerator countAnimationCoroutine(Text textElement, Int32 startValue, Int32 endValue, float countingSpeed, string extension = "", bool playCountSound = true)
     {
         // Sicherheitswartezeit einmal anlegen
-        WaitForSeconds wait = new WaitForSeconds(Mathf.Max(0.0001f, countingSpeed));
+        WaitForSecondsRealtime wait = new WaitForSecondsRealtime(Mathf.Max(0.0001f, countingSpeed));
 
         // Schrittweite: max(1, ~10 Schritte gesamt)
         int range = Mathf.Max(0, endValue - startValue);
@@ -141,8 +136,8 @@ public class UIManager : MonoBehaviour
         int soundEvery = 2;
         int soundCountdown = soundEvery;
 
-        // kleine Startverzögerung wie im Original
-        yield return new WaitForSeconds(0.2f);
+        // Kurze StartverzÃ¶gerung wie im Original.
+        yield return new WaitForSecondsRealtime(0.2f);
 
         for (int v = startValue; v < endValue; v += step)
         {
@@ -188,24 +183,28 @@ public class UIManager : MonoBehaviour
 
             if (GameHandler.comboDelayCountDown <= 0)//when combo ends
             {
-                if (GameHandler.comboCounter > 1)//calculate score for ended combo
-                {
-                    if (GameHandler.comboCounter > GameHandler.curBestCombo)//check combo is current highest combo
-                        GameHandler.curBestCombo = GameHandler.comboCounter;
-
-                    Int32 tmpComboScore = (Int32)GameHandler.comboCounter * (Int32)GameHandler.comboCounter;//calculate combo score
-
-                    GameObject newComboScorePopup = Instantiate(instance.comboScorePopupPrefab, instance.UIContent.transform);
-                    newComboScorePopup.GetComponent<Text>().text = tmpComboScore.ToString();
-                    Destroy(newComboScorePopup, 3f);
-
-                    gameHandler.AddScore(tmpComboScore);
-                }
-                GameHandler.comboCounter = 1;
-                instance.comboPanel.gameObject.SetActive(false);
+                FinishCombo();
             }
         }
     }
 
-
+    public void FinishCombo(bool showPopup = true)
+    {
+        if (GameHandler.comboCounter > 1)
+        {
+            GameHandler.curBestCombo = Mathf.Max(GameHandler.curBestCombo, GameHandler.comboCounter);
+            Int32 comboScore = GameHandler.comboCounter * GameHandler.comboCounter;
+            if (showPopup)
+            {
+                GameObject popup = Instantiate(comboScorePopupPrefab, UIContent.transform);
+                popup.GetComponent<Text>().text = comboScore.ToString();
+                Destroy(popup, 3f);
+            }
+            gameHandler.AddScore(comboScore);
+        }
+        GameHandler.comboCounter = 0;
+        GameHandler.comboDelayCountDown = 0;
+        GameHandler.addLifeCounter = 0;
+        comboPanel.SetActive(false);
+    }
 }

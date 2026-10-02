@@ -15,10 +15,12 @@ public class Explosion : MonoBehaviour
     IEnumerator fadeOut()
     {
         Color tmpColor = GetComponent<SpriteRenderer>().color;
+        WaitForSeconds wait = new WaitForSeconds(0.2f);
         while(tmpColor.a > 0)
         {
-            yield return new WaitForSeconds(0.2f);
-            tmpColor.a -= Time.deltaTime * fadeOutTime;
+            yield return wait;
+            // Preserve the original fade speed at Android's default 30 FPS.
+            tmpColor.a = Mathf.Max(0, tmpColor.a - fadeOutTime / 30f);
             GetComponent<SpriteRenderer>().color = tmpColor;
         }
         Destroy(gameObject);

@@ -852,19 +852,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 218175223}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 793115756}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: replayGame
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &218175223
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2076,8 +2064,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   crunchieSizeMultiplier: 0.9
-  spawnChance: {x: 0, y: 0.0015}
-  increaseSpawnChancePerSecond: {x: 0, y: 0.0001}
+  spawnChance: {x: 0, y: 0.000075}
+  increaseSpawnChancePerSecond: {x: 0, y: 0.0000125}
   faces:
   - {fileID: 21300000, guid: aabb69ed49b31484c9f14e7a1d118de3, type: 3}
   - {fileID: 21300000, guid: b1a3a7263f23019478c4a442e65d6e9b, type: 3}
@@ -2183,19 +2171,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 703732472}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 793115756}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: pauseMenueShowHide
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &703732472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4341,19 +4317,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1817820789}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 793115756}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: exitGame
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1817820789
 MonoBehaviour:
   m_ObjectHideFlags: 0

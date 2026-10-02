@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +32,7 @@ public class UltimateMode : MonoBehaviour
     public Sprite fullFace;
 
     public static UltimateMode instance;
+    public Sprite CurrentFace { get; private set; }
 
 
 
@@ -44,17 +43,26 @@ public class UltimateMode : MonoBehaviour
 
     public void Init()
     {
+        CancelInvoke();
+        foreach (Transform smash in transform)
+        {
+            smash.gameObject.SetActive(false);
+            Destroy(smash.gameObject);
+        }
         instance.currentMode = eUltimateModes.None;
 
         instance.currentMultiplier = 1;
 
         instance.ultimateKills = 0;
+        CurrentFace = null;
 
         updateCall();
     }
 
     public void updateCall()
     {
+        if (GameHandler.isPaused || GameHandler.isGameOver)
+            return;
         if (GameHandler.comboCounter > 0)
         {
             Color tmpColor = instance.imgUltimateFrame.color;
@@ -100,26 +108,25 @@ public class UltimateMode : MonoBehaviour
         {
             case eUltimateModes.None:
                 currentMultiplier = 1;
-                CrunchieSpawner.instance.SetUltimateMode();
+                CurrentFace = null;
                 break;
             case eUltimateModes.light:
                 currentMultiplier = multiplierLight;
-                CrunchieSpawner.instance.SetUltimateMode(lightFace);
+                CurrentFace = lightFace;
                 break;
             case eUltimateModes.medium:
                 currentMultiplier = multiplierMedium;
-                CrunchieSpawner.instance.SetUltimateMode(mediumFace);
+                CurrentFace = mediumFace;
                 break;
             case eUltimateModes.full:
                 currentMultiplier = multiplierFull;
-                CrunchieSpawner.instance.SetUltimateMode(fullFace);
+                CurrentFace = fullFace;
                 break;
             default:
                 break;
         }
 
-        CancelInvoke("cancelUltimateMode");
-        Invoke("cancelUltimateMode", 5);
+        CrunchieSpawner.instance.SetUltimateMode(CurrentFace);
     }
 
     public void addUltimateKill(int addVal)
@@ -131,14 +138,15 @@ public class UltimateMode : MonoBehaviour
             if (ultimateKills >= ultimateSmasherByKills)
             {
                 ultimateKills = 0;
-                createUltimateSmash(Input.mousePosition);
+                Vector3 position = Input.touchCount > 0 ? (Vector3)Input.GetTouch(0).position : Input.mousePosition;
+                createUltimateSmash(position);
             }
         }
     }
 
     public void createUltimateSmash(Vector3 position)
     {
-        GameObject newSmasher = Instantiate(ultimateSmashPrefab);
+        GameObject newSmasher = Instantiate(ultimateSmashPrefab, transform);
         Vector3 tmpPosition = Camera.main.ScreenToWorldPoint(position);
         tmpPosition.z = 10;
         newSmasher.transform.position = tmpPosition;
@@ -161,11 +169,6 @@ public class UltimateMode : MonoBehaviour
                 break;
         }
         Destroy(newSmasher, 3);
-    }
-
-    private void cancelUltimateMode()
-    {
-        setUltimateMode(eUltimateModes.None);
     }
 
 }

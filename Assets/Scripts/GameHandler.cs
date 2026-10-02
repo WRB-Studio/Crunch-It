@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameHandler : MonoBehaviour
@@ -37,6 +35,10 @@ public class GameHandler : MonoBehaviour
     private UIManager uIManager;
     private UltimateMode ultimateMode;
     private CrunchieSpawner crunchieSpawner;
+    private BoxCollider2D leftEdgeCollider;
+    private BoxCollider2D rightEdgeCollider;
+    private readonly List<GameObject> lifeAnimations = new List<GameObject>();
+    private bool initialized;
 
 
 
@@ -55,6 +57,17 @@ public class GameHandler : MonoBehaviour
 
     public void Init()
     {
+        StopAllCoroutines();
+        foreach (GameObject animation in lifeAnimations)
+            if (animation != null) Destroy(animation);
+        lifeAnimations.Clear();
+
+        Transform explosions = GameObject.Find("ExplosionsParent").transform;
+        foreach (Transform explosion in explosions)
+        {
+            explosion.gameObject.SetActive(false);
+            Destroy(explosion.gameObject);
+        }
         uIManager = UIManager.instance;
         ultimateMode = UltimateMode.instance;
         crunchieSpawner = CrunchieSpawner.instance;
@@ -72,7 +85,7 @@ public class GameHandler : MonoBehaviour
         comboCounter = 0;
         curBestCombo = 0;
 
-        isPaused = false;
+        SetPaused(false);
         isGameOver = false;
 
         playingMusic = StaticAudioHandler.playMusic(instance.mainMusic, -0.5f);
@@ -80,10 +93,13 @@ public class GameHandler : MonoBehaviour
         uIManager.Init();
         ultimateMode.Init();
         crunchieSpawner.Init();
+        initialized = true;
     }
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Escape) && !isGameOver)
+            uIManager.pauseMenueShowHide();
         uIManager.UpdateCall();
         ultimateMode.updateCall();
         crunchieSpawner.UpdateCall();
@@ -105,21 +121,17 @@ public class GameHandler : MonoBehaviour
 
     public void AddLife(int newLifeValue)
     {
+        if (isGameOver)
+            return;
+
+        curLifes = Mathf.Max(0, curLifes + newLifeValue);
+        uIManager.UpdateLifes();
         if (newLifeValue > 0)
         {
-            instance.StartCoroutine(instance.AddLifeAnimation(newLifeValue));
+            instance.StartCoroutine(instance.AddLifeAnimation());
         }
-        else
-        {
-            curLifes += newLifeValue;
-            if (curLifes < 0)
-                curLifes = 0;
-
-            uIManager.UpdateLifes();
-
-            if (curLifes <= 0)
-                SetGameOver();
-        }
+        else if (curLifes <= 0)
+            SetGameOver();
     }
         
 
@@ -138,6 +150,7 @@ public class GameHandler : MonoBehaviour
         comboCounter++;
         if (comboCounter > 1)
         {
+            curBestCombo = Mathf.Max(curBestCombo, comboCounter);
             UIManager.instance.comboPanel.gameObject.SetActive(true);
             UIManager.instance.comboPanel.GetComponent<Animator>().Play("MultiAdd");
             UIManager.instance.txtCombo.text = comboCounter.ToString() + "X";
@@ -156,10 +169,11 @@ public class GameHandler : MonoBehaviour
 
     public static void SetGameOver()
     {
+        if (isGameOver)
+            return;
+        instance.uIManager.FinishCombo();
         isGameOver = true;
-        instance.uIManager.pauseMenueShowHide();
-        instance.uIManager.pauseMenuTitle.SetActive(false);
-        instance.uIManager.gameOverMenuTitle.SetActive(true);
+        SetPaused(true);
 
         instance.playingMusic.pitch = 0.9f;
 
@@ -169,8 +183,8 @@ public class GameHandler : MonoBehaviour
         UIManager.instance.btContinue.transform.GetChild(0).GetComponent<Image>().color = tmpColor;
         UIManager.instance.btPause.GetComponent<Button>().interactable = false;
 
-        instance.uIManager.showScore();
         instance.SaveBestScores();
+        instance.uIManager.pauseMenueShowHide(true);
     }
 
     public static bool GetGameOver()
@@ -180,15 +194,28 @@ public class GameHandler : MonoBehaviour
 
     public void ReplayGame()
     {
+        uIManager.FinishCombo();
         SaveBestScores();
 
         Init();
     }
 
 
-    private void SaveBestScores()
+    private void SaveBestScores(bool includePendingCombo = false)
     {
-        instance.StartCoroutine(instance.SetNewBestCoroutine());
+        Int32 score = curScore;
+        if (includePendingCombo && comboCounter > 1)
+            score += comboCounter * comboCounter;
+        if (score > SaveLoadData.loadBestScore())
+        {
+            SaveLoadData.saveBestScore(score);
+            if (uIManager != null) uIManager.newBestScoreArrow.SetActive(true);
+        }
+        if (curBestCombo > SaveLoadData.loadBestCombo())
+        {
+            SaveLoadData.saveBestCombo(curBestCombo);
+            if (uIManager != null) uIManager.newBestComboArrow.SetActive(true);
+        }
     }
 
     public static bool GetIsPause()
@@ -198,6 +225,7 @@ public class GameHandler : MonoBehaviour
 
     public void ExitGame()
     {
+        uIManager.FinishCombo();
         SaveBestScores();
 
 #if UNITY_EDITOR
@@ -231,23 +259,31 @@ public class GameHandler : MonoBehaviour
         finishLine.transform.position = new Vector3(((bottomLeftScreenPoint.x - topRightScreenPoint.x) / 2f) + finishLine.transform.localScale.x / 4, bottomLeftScreenPoint.y + 1, 0f);
 
         //left collider
-        GameObject leftColliderGO = new GameObject("LeftEdgeCollider");
-        BoxCollider2D collider = leftColliderGO.AddComponent<BoxCollider2D>();
+        if (leftEdgeCollider == null)
+        {
+            leftEdgeCollider = new GameObject("LeftEdgeCollider").AddComponent<BoxCollider2D>();
+            leftEdgeCollider.transform.SetParent(transform);
+        }
+        BoxCollider2D collider = leftEdgeCollider;
         collider.size = new Vector3(0.1f, Mathf.Abs(topRightScreenPoint.y - bottomLeftScreenPoint.y) * 2, 0f);
         collider.offset = new Vector2(collider.size.x / 2f, collider.size.y / 2f);
-        leftColliderGO.transform.position = new Vector3(((bottomLeftScreenPoint.x - topRightScreenPoint.x) / 2f) - collider.size.x, bottomLeftScreenPoint.y, 0f);
+        leftEdgeCollider.transform.position = new Vector3(((bottomLeftScreenPoint.x - topRightScreenPoint.x) / 2f) - collider.size.x, bottomLeftScreenPoint.y, 0f);
 
 
         //right collider
-        GameObject rightColliderGO = new GameObject("RightEdgeCollider");
-        collider = rightColliderGO.AddComponent<BoxCollider2D>();
+        if (rightEdgeCollider == null)
+        {
+            rightEdgeCollider = new GameObject("RightEdgeCollider").AddComponent<BoxCollider2D>();
+            rightEdgeCollider.transform.SetParent(transform);
+        }
+        collider = rightEdgeCollider;
         collider.size = new Vector3(0.1f, Mathf.Abs(topRightScreenPoint.y - bottomLeftScreenPoint.y) * 2, 0f);
         collider.offset = new Vector2(collider.size.x / 2f, collider.size.y / 2f);
-        rightColliderGO.transform.position = new Vector3(topRightScreenPoint.x, bottomLeftScreenPoint.y, 0f);
+        rightEdgeCollider.transform.position = new Vector3(topRightScreenPoint.x, bottomLeftScreenPoint.y, 0f);
     }
 
 
-    private IEnumerator AddLifeAnimation(int newLifeValue)
+    private IEnumerator AddLifeAnimation()
     {
         Vector2 inputPosition;
         if (Application.platform == RuntimePlatform.Android && Input.touchCount > 0)
@@ -257,6 +293,7 @@ public class GameHandler : MonoBehaviour
 
         GameObject lifeReference = GameObject.Find("ImgHearth");
         GameObject newLife = Instantiate(lifeReference, GameObject.Find("ImgHearth").transform);
+        lifeAnimations.Add(newLife);
         newLife.transform.position = inputPosition;
         newLife.transform.localScale = new Vector3(newLife.transform.localScale.x * 2, newLife.transform.localScale.y * 2, newLife.transform.localScale.z * 2);
 
@@ -273,43 +310,41 @@ public class GameHandler : MonoBehaviour
         }
 
         Destroy(newLife);
+        lifeAnimations.Remove(newLife);
         StaticAudioHandler.playSound(addLifeSound, "tmpAddLife", 1, 0, -0.5f);
 
-        curLifes += newLifeValue;
-        uIManager.UpdateLifes();
     }
 
 
-    private IEnumerator SetNewBestCoroutine()
+    public static void SetPaused(bool paused)
     {
-        Int32 loadedBestScore = SaveLoadData.loadBestScore();
-        int loadedBestCombo = SaveLoadData.loadBestCombo();
-
-        if (curScore > loadedBestScore)
-        {
-            uIManager.newBestScoreArrow.SetActive(true);
-        }
-
-        if (curBestCombo > loadedBestCombo)
-        {
-            uIManager.newBestComboArrow.SetActive(true);
-        }
-
-        yield return new WaitForSeconds(1f);
-
-        if (curScore > loadedBestScore)
-        {
-            SaveLoadData.saveBestScore(curScore);
-            instance.StartCoroutine(UIManager.instance.countAnimationCoroutine(UIManager.instance.txtBestScore, 0, curScore, UIManager.instance.counterAnimationSpeed));
-        }
-
-        if (curBestCombo > loadedBestCombo)
-        {
-            SaveLoadData.saveBestCombo(curBestCombo);
-            instance.StartCoroutine(UIManager.instance.countAnimationCoroutine(UIManager.instance.txtBestCombo, 0, curBestCombo, UIManager.instance.counterAnimationSpeed, "x"));
-        }
-
-        LayoutRebuilder.ForceRebuildLayoutImmediate(UIManager.instance.scorePanel);
+        isPaused = paused;
+        Time.timeScale = paused ? 0 : 1;
     }
 
+    private void OnApplicationPause(bool paused)
+    {
+        if (!paused || !initialized) return;
+        SaveBestScores(true);
+        if (!isPaused && !isGameOver) uIManager.pauseMenueShowHide(true);
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused) OnApplicationPause(true);
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (!initialized) return;
+        uIManager.FinishCombo(false);
+        SaveBestScores();
+    }
+
+    private void OnDestroy()
+    {
+        if (instance != this) return;
+        Time.timeScale = 1;
+        instance = null;
+    }
 }
