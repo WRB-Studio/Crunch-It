@@ -39,6 +39,9 @@ public class GameHandler : MonoBehaviour
     private BoxCollider2D rightEdgeCollider;
     private readonly List<GameObject> lifeAnimations = new List<GameObject>();
     private bool initialized;
+    private RectTransform lifeIcon;
+    private Vector3 lifeIconScale;
+    private Coroutine lifeIconPulse;
 
 
 
@@ -58,6 +61,13 @@ public class GameHandler : MonoBehaviour
     public void Init()
     {
         StopAllCoroutines();
+        lifeIconPulse = null;
+        if (lifeIcon == null)
+        {
+            lifeIcon = GameObject.Find("ImgHearth").GetComponent<RectTransform>();
+            lifeIconScale = lifeIcon.localScale;
+        }
+        lifeIcon.localScale = lifeIconScale;
         foreach (GameObject animation in lifeAnimations)
             if (animation != null) Destroy(animation);
         lifeAnimations.Clear();
@@ -286,7 +296,7 @@ public class GameHandler : MonoBehaviour
     private IEnumerator AddLifeAnimation()
     {
         Vector2 inputPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
-        RectTransform heart = GameObject.Find("ImgHearth").GetComponent<RectTransform>();
+        RectTransform heart = lifeIcon;
         Canvas canvas = heart.GetComponentInParent<Canvas>().rootCanvas;
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
         Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
@@ -337,8 +347,24 @@ public class GameHandler : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
         }
 
+        reward.anchoredPosition = canvasRect.InverseTransformPoint(heart.TransformPoint(heart.rect.center));
         lifeAnimations.Remove(reward.gameObject);
         Destroy(reward.gameObject);
+        if (lifeIconPulse != null) StopCoroutine(lifeIconPulse);
+        lifeIconPulse = StartCoroutine(PulseLifeIcon());
+    }
+
+    private IEnumerator PulseLifeIcon()
+    {
+        float elapsed = 0;
+        while (elapsed < 0.3f)
+        {
+            lifeIcon.localScale = lifeIconScale * (1f + 0.25f * Mathf.Sin(Mathf.PI * elapsed / 0.3f));
+            yield return null;
+            elapsed += Time.unscaledDeltaTime;
+        }
+        lifeIcon.localScale = lifeIconScale;
+        lifeIconPulse = null;
     }
 
     public static void SetPaused(bool paused)

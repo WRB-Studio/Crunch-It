@@ -25,6 +25,8 @@ public class CrunchieSpawner : MonoBehaviour
     private const double spawnInterval = 1.0 / 30.0;
     private double spawnElapsed;
     private double difficultyElapsed;
+    private double timeSinceLastSpawn;
+    private const double maxSpawnGap = 3.0;
     private int lastBossSpawnKills;
 
 
@@ -41,6 +43,7 @@ public class CrunchieSpawner : MonoBehaviour
         instance.increaseSpawnChancePerSecond.x = instance.increaseSpawnChancePerSecond.y;
         spawnElapsed = 0;
         difficultyElapsed = 0;
+        timeSinceLastSpawn = 0;
         lastBossSpawnKills = 0;
 
         for (int i = 0; i < instantiatedCrunchies.Count; i++)
@@ -96,6 +99,7 @@ public class CrunchieSpawner : MonoBehaviour
         while (spawnElapsed >= spawnInterval)
         {
             spawnElapsed -= spawnInterval;
+            timeSinceLastSpawn += spawnInterval;
             InstantiateCrunchie();
         }
     }
@@ -124,6 +128,7 @@ public class CrunchieSpawner : MonoBehaviour
     {
         float randomVal = Random.value * (UltimateMode.instance.currentMultiplier / 20);
         GameObject newCrunchie = null;
+        bool fieldWasEmpty = instantiatedCrunchies.Count == 0;
 
         Crunchie normalCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal);
         Crunchie fastCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast);
@@ -151,7 +156,7 @@ public class CrunchieSpawner : MonoBehaviour
             }
         }
 
-        if (instantiatedCrunchies.Count <= 0 && newCrunchie == null)
+        if (newCrunchie == null && (fieldWasEmpty || timeSinceLastSpawn >= maxSpawnGap))
         {
             newCrunchie = Instantiate(normalCrunchie.gameObject);
         }
@@ -166,7 +171,8 @@ public class CrunchieSpawner : MonoBehaviour
             else
                 face = faces[Random.Range(0, faces.Length)];
 
-            newCrunchie.transform.position = randomSpawnpointOutOfCamView();
+            timeSinceLastSpawn = 0;
+            newCrunchie.transform.position = randomSpawnpointOutOfCamView(fieldWasEmpty);
             newCrunchie.transform.parent = transform;
 
             instantiatedCrunchies.Add(newCrunchie.GetComponent<Crunchie>());
@@ -228,10 +234,12 @@ public class CrunchieSpawner : MonoBehaviour
         Destroy(crunchie.gameObject);
     }
 
-    private Vector2 randomSpawnpointOutOfCamView()
+    private Vector2 randomSpawnpointOutOfCamView(bool fieldWasEmpty)
     {
         float randPosX = Random.Range(camBounds.min.x, camBounds.max.x);
-        float randPosY = Random.Range(camBounds.max.y + 1f, camBounds.max.y + 1.5f);
+        float randPosY = fieldWasEmpty
+            ? Random.Range(camBounds.max.y + 0.2f, camBounds.max.y + 0.4f)
+            : Random.Range(camBounds.max.y + 1f, camBounds.max.y + 1.5f);
 
         return new Vector3(randPosX, randPosY, 0);
     }
