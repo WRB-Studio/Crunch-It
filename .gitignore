@@ -70,3 +70,18 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Local Android release credentials
+[Ss]ecrets/
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+release-secrets.xml
+.env
+.env.*
+!.env.example
+*service-account*.json
+*service_account*.json

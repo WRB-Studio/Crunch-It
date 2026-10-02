@@ -1,0 +1,17 @@
+{
+  "packageName": "com.WRBStudio.CrunchIt",
+  "listings": [
+    {
+      "language": "de-DE",
+      "shortDescription": "Fang die kleinen Crunchies mit einem Fingertipp!",
+      "fullDescription": "Die kleinen Crunchies sind unterwegs!\n\nTippe die niedlichen Figuren an, bevor sie unten ankommen. Manche flitzen besonders schnell, andere laufen im Zickzack oder teilen sich in zwei kleine Crunchies. So gibt es immer etwas zu entdecken.\n\n• Einfach tippen und losspielen.\n• Bunte Figuren mit lustigen Gesichtern.\n• Verschiedene Crunchies sorgen für Abwechslung.\n• Mehrere Treffer hintereinander bringen Punkte und zusätzliche Herzen.\n• Kurze Spielrunden für zwischendurch.\n\nSchaffst du es, die kleinen Crunchies zu erwischen? Probier es aus!",
+      "releaseNotes": "• Neue kleine Crunchies laufen im Zickzack!\n• Das Spielfeld hat einen neuen Hintergrund bekommen.\n• Gewonnene Herzen fliegen jetzt zur Herzanzeige.\n• Die Runden starten mit kürzeren Wartezeiten.\n• Pausieren, Neustarten und das Speichern deiner Bestleistungen wurden verbessert."
+    },
+    {
+      "language": "en-US",
+      "shortDescription": "Catch the little Crunchies with a tap!",
+      "fullDescription": "The little Crunchies are on the move!\n\nTap the cute characters before they reach the bottom. Some run extra fast, others zigzag or split into two little Crunchies. There is always something to discover.\n\n• Just tap and start playing.\n• Colourful characters with funny faces.\n• Different Crunchies keep things varied.\n• Consecutive hits earn points and extra hearts.\n• Short rounds for a little break.\n\nCan you catch the little Crunchies? Give it a try!",
+      "releaseNotes": "• New little Crunchies run in a zigzag!\n• The playfield has a new background.\n• Earned hearts now fly to the heart counter.\n• Rounds start with shorter waits.\n• Pausing, restarting and saving your personal bests have been improved."
+    }
+  ]
+}
