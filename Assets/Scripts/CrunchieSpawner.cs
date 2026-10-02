@@ -26,6 +26,7 @@ public class CrunchieSpawner : MonoBehaviour
     private double spawnElapsed;
     private double difficultyElapsed;
     private double timeSinceLastSpawn;
+    private double roundElapsed;
     private const double maxSpawnGap = 3.0;
     private int lastBossSpawnKills;
 
@@ -44,6 +45,7 @@ public class CrunchieSpawner : MonoBehaviour
         spawnElapsed = 0;
         difficultyElapsed = 0;
         timeSinceLastSpawn = 0;
+        roundElapsed = 0;
         lastBossSpawnKills = 0;
 
         for (int i = 0; i < instantiatedCrunchies.Count; i++)
@@ -100,6 +102,7 @@ public class CrunchieSpawner : MonoBehaviour
         {
             spawnElapsed -= spawnInterval;
             timeSinceLastSpawn += spawnInterval;
+            roundElapsed += spawnInterval;
             InstantiateCrunchie();
         }
     }
@@ -127,7 +130,7 @@ public class CrunchieSpawner : MonoBehaviour
     private GameObject InstantiateCrunchie()
     {
         float randomVal = Random.value * (UltimateMode.instance.currentMultiplier / 20);
-        GameObject newCrunchie = null;
+        Crunchie prefabToSpawn = null;
         bool fieldWasEmpty = instantiatedCrunchies.Count == 0;
 
         Crunchie normalCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal);
@@ -137,32 +140,41 @@ public class CrunchieSpawner : MonoBehaviour
 
         if (GameHandler.curDestroyed > 0 && GameHandler.curDestroyed != lastBossSpawnKills && GameHandler.curDestroyed % bossCrunchie.spawnAfterKills == 0 && !checkCrunchieTypeIsSpawned(Crunchie.eCrunchieTypes.Boss))//spawnhandling for boss crunchie
         {
-            newCrunchie = Instantiate(bossCrunchie.gameObject);
+            prefabToSpawn = bossCrunchie;
             lastBossSpawnKills = GameHandler.curDestroyed;
         }
         else if (randomVal <= getSpawnChance())
         {
             if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Fast).spawnChance)//spawnhandling for fast crunchie
             {
-                newCrunchie = Instantiate(fastCrunchie.gameObject);
+                prefabToSpawn = fastCrunchie;
             }
             else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Splitter).spawnChance)
             {
-                newCrunchie = Instantiate(splitterCrunchie.gameObject);
+                prefabToSpawn = splitterCrunchie;
             }
             else if (Random.value <= getCrunchiePrefab(Crunchie.eCrunchieTypes.Normal).spawnChance)//spawnhandling for nomal crunchie
             {
-                newCrunchie = Instantiate(normalCrunchie.gameObject);
+                prefabToSpawn = normalCrunchie;
             }
         }
 
-        if (newCrunchie == null && (fieldWasEmpty || timeSinceLastSpawn >= maxSpawnGap))
+        if (prefabToSpawn == null && (fieldWasEmpty || timeSinceLastSpawn >= maxSpawnGap))
         {
-            newCrunchie = Instantiate(normalCrunchie.gameObject);
+            prefabToSpawn = normalCrunchie;
         }
 
-        if (newCrunchie != null)
+        if (prefabToSpawn == normalCrunchie && roundElapsed >= 30.0)
         {
+            Crunchie zigzagCrunchie = getCrunchiePrefab(Crunchie.eCrunchieTypes.Zigzag);
+            if (zigzagCrunchie != null && Random.value <= zigzagCrunchie.spawnChance)
+                prefabToSpawn = zigzagCrunchie;
+        }
+
+        GameObject newCrunchie = null;
+        if (prefabToSpawn != null)
+        {
+            newCrunchie = Instantiate(prefabToSpawn.gameObject);
             Sprite body = bodys[Random.Range(0, bodys.Length)];
             Sprite face;
 

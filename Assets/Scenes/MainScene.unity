@@ -2095,6 +2095,7 @@ MonoBehaviour:
   - {fileID: 2542026270993285825, guid: d92efa1f48e079146891242223a4a1fa, type: 3}
   - {fileID: 2542026270993285825, guid: 20de05b638da0c84a8b0c9acf648102c, type: 3}
   - {fileID: 2542026270993285825, guid: fd2158f4c87519b48992029c0bf99330, type: 3}
+  - {fileID: 2542026270993285825, guid: 99a0b4b469234276a33737b6feb05b87, type: 3}
   colorSplitter: {r: 0.24092624, g: 0.6415094, b: 0.2208971, a: 1}
   splitterScale: 0.3
 --- !u!1 &703732469

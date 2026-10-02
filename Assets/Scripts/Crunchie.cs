@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class Crunchie : MonoBehaviour
 {
     public enum eCrunchieTypes
     {
-        None, Normal, Fast, Boss, Splitter
+        None, Normal, Fast, Boss, Splitter, Zigzag
     }
 
     public eCrunchieTypes crunchieType = eCrunchieTypes.None;
@@ -30,6 +30,10 @@ public class Crunchie : MonoBehaviour
     private GameHandler gameHandler;
     private CrunchieSpawner crunchieSpawner;
     private bool isDead;
+    private double zigzagTime;
+    private float zigzagCenterX;
+    private float zigzagAmplitude;
+    private float zigzagDirection;
 
 
     private void Awake()
@@ -71,6 +75,20 @@ public class Crunchie : MonoBehaviour
 
             float tmpScale = Mathf.Clamp(1 + hitpoints.x / 30, transform.localScale.x, 2);
             transform.localScale *= tmpScale;
+        }
+
+        if (crunchieType == eCrunchieTypes.Zigzag)
+        {
+            GetComponent<Animator>().speed = 1.5f;
+            float halfWidth = Camera.main.orthographicSize * Screen.width / Screen.height;
+            float margin = bodyRenderer.bounds.extents.x + 0.1f;
+            float minX = Camera.main.transform.position.x - halfWidth + margin;
+            float maxX = Camera.main.transform.position.x + halfWidth - margin;
+            zigzagAmplitude = Mathf.Min(0.8f, Mathf.Max(0f, (maxX - minX) * 0.5f));
+            zigzagCenterX = Mathf.Clamp(transform.position.x, minX + zigzagAmplitude, maxX - zigzagAmplitude);
+            zigzagDirection = Random.value < 0.5f ? -1f : 1f;
+            zigzagTime = 0;
+            transform.position = new Vector3(zigzagCenterX, transform.position.y, transform.position.z);
         }
 
         originColor = bodyRenderer.color;
@@ -166,7 +184,7 @@ public class Crunchie : MonoBehaviour
             return;
 
         // Update position
-        transform.position = new Vector2(transform.position.x, transform.position.y - Time.deltaTime * curMinMaxSpeed.x * UltimateMode.instance.currentMultiplier);
+        Move(Time.deltaTime);
 
         // Check if Crunchie has passed the finish line
         if (!passedFinishLine && transform.position.y < CrunchieSpawner.finishLine.position.y)
@@ -178,6 +196,18 @@ public class Crunchie : MonoBehaviour
         // Remove Crunchie if it is out of the camera view
         if (crunchieSpawner.checkObjectIsOutOfCameraView(transform.position))
             crunchieSpawner.removeCrunchie(this);
+    }
+
+    private void Move(float deltaTime)
+    {
+        float movementTime = deltaTime * UltimateMode.instance.currentMultiplier;
+        float x = transform.position.x;
+        if (crunchieType == eCrunchieTypes.Zigzag)
+        {
+            zigzagTime += movementTime;
+            x = zigzagCenterX + zigzagAmplitude * Mathf.Sin((float)(zigzagTime * Mathf.PI * 2f / 1.8f)) * zigzagDirection;
+        }
+        transform.position = new Vector3(x, transform.position.y - movementTime * curMinMaxSpeed.x, transform.position.z);
     }
 
     public void setUltimateMode(Sprite face)
