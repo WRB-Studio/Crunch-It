@@ -23,7 +23,7 @@ if ($MetadataFile -and -not $ConfirmMetadata -and -not $CheckOnly) {
 }
 $metadata = if ($MetadataFile) { Read-PlayMetadata -MetadataFile $MetadataFile } else { $null }
 $fastlanePath = Resolve-Fastlane
-$config = Get-ReleaseConfig
+$config = Get-ReleaseConfig -RequirePlay
 $highest = Get-HighestPlayVersionCode
 $VersionCode = Resolve-ReleaseVersionCode -HighestPlayVersion $highest -RequestedVersion $VersionCode -ProjectVersion (Get-ProjectVersion).VersionCode
 Write-Host "Package: $($script:ReleaseProject.PackageName); track: $Track; next versioncode: $VersionCode (Google Play maximum: $highest)."

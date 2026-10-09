@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$UnityPath,
-    [int]$VersionCode
+    [ValidateRange(0, [int]::MaxValue)][int]$VersionCode
 )
 
 . (Join-Path $PSScriptRoot 'ReleaseCommon.ps1')

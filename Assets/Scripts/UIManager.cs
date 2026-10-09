@@ -24,6 +24,7 @@ public class UIManager : MonoBehaviour
     public Button btContinue;
     public Button btReplay;
     public Button btExit;
+    public Button btPrivacyPolicy;
 
     public Text txtYOUScore;
     public Text txtYOUCombo;
@@ -71,11 +72,13 @@ public class UIManager : MonoBehaviour
         btContinue.onClick.RemoveAllListeners();
         btReplay.onClick.RemoveAllListeners();
         btExit.onClick.RemoveAllListeners();
+        btPrivacyPolicy.onClick.RemoveAllListeners();
 
         btPause.onClick.AddListener(delegate { pauseMenueShowHide(); });
         btContinue.onClick.AddListener(delegate { pauseMenueShowHide(false); });
         btReplay.onClick.AddListener(delegate { gameHandler.ReplayGame(); });
         btExit.onClick.AddListener(delegate { gameHandler.ExitGame(); });
+        btPrivacyPolicy.onClick.AddListener(OpenPrivacyPolicy);
 
         btPause.GetComponent<Button>().interactable = true;
         btContinue.interactable = true;
@@ -87,6 +90,11 @@ public class UIManager : MonoBehaviour
         showScore(false);
 
         pauseMenueShowHide(false);
+    }
+
+    private void OpenPrivacyPolicy()
+    {
+        Application.OpenURL("https://www.freeprivacypolicy.com/live/8ad86446-a809-46c0-a88e-acd020fa1ba7");
     }
 
     public void UpdateCall()

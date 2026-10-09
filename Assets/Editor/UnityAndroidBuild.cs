@@ -9,14 +9,20 @@ namespace UnityAndroidRelease.Editor
 {
     public static class UnityAndroidBuild
     {
+        // Change only when the PowerShell/C# build contract changes incompatibly.
+        public const int ProtocolVersion = 1;
+
         [Serializable]
         class BuildReceipt
         {
-            public string packageName, versionName, outputPath;
-            public int versionCode;
+            public string packageName, versionName, outputPath, format;
+            public int versionCode, protocolVersion;
         }
         public static void BuildFromEnvironment()
         {
+            if (Environment.GetEnvironmentVariable("UNITY_RELEASE_PROTOCOL_VERSION") != ProtocolVersion.ToString())
+                throw new InvalidOperationException("Incompatible release scripts. Update scripts/ and UnityAndroidBuild.cs together; preserve project configuration and .meta files.");
+
             var outputPath = RequireEnvironmentVariable("UNITY_RELEASE_BUILD_OUTPUT");
             var format = RequireEnvironmentVariable("UNITY_RELEASE_BUILD_FORMAT");
             var isBundle = string.Equals(format, "aab", StringComparison.OrdinalIgnoreCase);
@@ -32,12 +38,18 @@ namespace UnityAndroidRelease.Editor
             var originalKeyaliasPass = PlayerSettings.Android.keyaliasPass;
             var originalUseCustomKeystore = PlayerSettings.Android.useCustomKeystore;
             var originalBuildAppBundle = EditorUserBuildSettings.buildAppBundle;
+            var originalExportProject = EditorUserBuildSettings.exportAsGoogleAndroidProject;
             var originalVersionCode = PlayerSettings.Android.bundleVersionCode;
 
             try
             {
                 string packageName = RequireEnvironmentVariable("UNITY_RELEASE_PACKAGE_NAME");
-                if (PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android) != packageName)
+#if UNITY_2021_3_OR_NEWER
+                var actualPackageName = PlayerSettings.GetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android);
+#else
+                var actualPackageName = PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android);
+#endif
+                if (actualPackageName != packageName)
                     throw new InvalidOperationException("Android package name does not match release.config.json.");
                 PlayerSettings.Android.useCustomKeystore = true;
                 PlayerSettings.Android.keystoreName = RequireEnvironmentVariable("UNITY_RELEASE_KEYSTORE_PATH");
@@ -45,6 +57,7 @@ namespace UnityAndroidRelease.Editor
                 PlayerSettings.Android.keyaliasName = RequireEnvironmentVariable("UNITY_RELEASE_KEY_ALIAS");
                 PlayerSettings.Android.keyaliasPass = RequireEnvironmentVariable("UNITY_RELEASE_KEY_ALIAS_PASSWORD");
                 EditorUserBuildSettings.buildAppBundle = isBundle;
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
 
                 var requestedVersionCode = Environment.GetEnvironmentVariable("UNITY_RELEASE_VERSION_CODE");
                 if (!string.IsNullOrWhiteSpace(requestedVersionCode))
@@ -76,6 +89,8 @@ namespace UnityAndroidRelease.Editor
                     packageName = packageName,
                     versionName = PlayerSettings.bundleVersion,
                     versionCode = PlayerSettings.Android.bundleVersionCode,
+                    protocolVersion = ProtocolVersion,
+                    format = isBundle ? "aab" : "apk",
                     outputPath = outputPath
                 }, true));
             }
@@ -87,6 +102,7 @@ namespace UnityAndroidRelease.Editor
                 PlayerSettings.Android.keyaliasPass = originalKeyaliasPass;
                 PlayerSettings.Android.useCustomKeystore = originalUseCustomKeystore;
                 EditorUserBuildSettings.buildAppBundle = originalBuildAppBundle;
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = originalExportProject;
                 PlayerSettings.Android.bundleVersionCode = originalVersionCode;
             }
         }

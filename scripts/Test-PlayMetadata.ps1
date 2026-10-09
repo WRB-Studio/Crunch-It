@@ -82,19 +82,19 @@ $global:LASTEXITCODE = 0
 '@ | Set-Content (Join-Path $fixtureScripts 'fake-fastlane.ps1') -Encoding UTF8
     $source | ConvertTo-Json -Depth 6 | Set-Content $inputFile -Encoding UTF8
     & (Join-Path $fixtureScripts 'Build-AabAndSubmitToPlay.ps1') -MetadataFile $inputFile -Track internal -ConfirmMetadata -ReleaseStatus draft -ChangesNotSentForReview 6>$null
-    $cli = @(Get-Content (Join-Path $fixtureScripts 'arguments.json') -Raw | ConvertFrom-Json)
+    $cli = Get-Content (Join-Path $fixtureScripts 'arguments.json') -Raw | ConvertFrom-Json
     foreach ($option in @('--skip_upload_images', '--skip_upload_screenshots', '--changes_not_sent_for_review')) {
         if ($cli[[array]::IndexOf($cli, $option) + 1] -ne 'true') { throw "Unsafe CLI option: $option" }
     }
     if ($cli[[array]::IndexOf($cli, '--release_status') + 1] -ne 'draft') { throw 'Draft option was lost.' }
     & (Join-Path $fixtureScripts 'Submit-PlayMetadata.ps1') -MetadataFile $inputFile -VersionCode 42 -Track internal -ConfirmMetadata 6>$null
-    $cli = @(Get-Content (Join-Path $fixtureScripts 'arguments.json') -Raw | ConvertFrom-Json)
+    $cli = Get-Content (Join-Path $fixtureScripts 'arguments.json') -Raw | ConvertFrom-Json
     foreach ($option in @('--skip_upload_aab', '--skip_upload_apk')) {
         if ($cli[[array]::IndexOf($cli, $option) + 1] -ne 'true') { throw "Metadata-only command could upload binaries: $option" }
     }
     if ($cli[[array]::IndexOf($cli, '--version_code') + 1] -ne '42') { throw 'Metadata-only command targets the wrong release.' }
     & (Join-Path $fixtureScripts 'Build-AabAndSubmitToPlay.ps1') -Track internal 6>$null
-    $cli = @(Get-Content (Join-Path $fixtureScripts 'arguments.json') -Raw | ConvertFrom-Json)
+    $cli = Get-Content (Join-Path $fixtureScripts 'arguments.json') -Raw | ConvertFrom-Json
     foreach ($option in @('--skip_upload_metadata', '--skip_upload_changelogs')) {
         if ($cli[[array]::IndexOf($cli, $option) + 1] -ne 'true') { throw "Default upload unexpectedly changes texts: $option" }
     }

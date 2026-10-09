@@ -14,9 +14,11 @@ Available on Google Play <a href="https://play.google.com/store/apps/details?id=
   <img src="https://user-images.githubusercontent.com/32596430/155371157-9c976016-59d0-4c13-b2dc-8d465af85fc4.png" width="230" height="410" /> 
 </p>
 
-## Android release workflow
+## Unity Android Release Tools
 
-Integrated from [WRB-Studio/unity-google-play-uploader](https://github.com/WRB-Studio/unity-google-play-uploader) at commit `df31626d6d3a8034293cb383f867cd1810696db1`.
+Integrated from [WRB-Studio/unity-android-release-tools](https://github.com/WRB-Studio/unity-android-release-tools) at commit `f49e017225a820669006d0abb886504fbd6ca79d`.
+This revision renames the repository and tool only; scripts and the Unity helper are unchanged from `ea69ec2adf8c49833bd42123e6fa31e445ff530b`. Script commands, C# namespaces, `SecretsKey` and local configuration paths remain unchanged.
+For future updates, follow the [update guide at this revision](https://github.com/WRB-Studio/unity-android-release-tools/blob/f49e017225a820669006d0abb886504fbd6ca79d/UPDATING.md): update all PowerShell/Ruby scripts and the Unity build helper together, preserving this project's configuration, local secret locations and existing `.meta` GUIDs. Scripts and helper now use build protocol 1 and validate the receipt's protocol and artifact format before export or upload.
 Project configuration is in `scripts/release.config.json`; builds and logs go to `Builds/Android`.
 Requires Unity Android Build Support (SDK/NDK/OpenJDK), Ruby and Fastlane.
 
@@ -42,6 +44,25 @@ Reuse the existing shared service account (WRB Studio Unity Play Uploader) for a
 ```
 
 Use the existing Crunch It upload key. Uploads are started explicitly by these commands; pushing to Git does not publish a release.
+
+### Local Drive export and offline checks
+
+The shared workflow can export signed APKs or AABs into an existing local Drive folder. Configure the destination outside Git with `Set-DriveExportDirectory.ps1`; `release.config.json` and its existing `SecretsKey` remain unchanged. Signing credentials and Play-key locations remain in the existing encrypted local configuration.
+
+```powershell
+# Configure an existing local destination; does not build or copy
+./scripts/Set-DriveExportDirectory.ps1 -DriveDirectory '<existing-local-folder>'
+# Check the destination and build helper locally; no build, copy or network
+./scripts/Build-AndroidAndExportToDrive.ps1 -CheckOnly
+# Compile the helper against this project's Unity version without starting Unity
+./scripts/Test-UnityHelperCompilation.ps1 -UnityPath '<installed-Editor/Unity.exe>'
+```
+
+An explicitly requested export uses `Build-AndroidAndExportToDrive.ps1 -Format apk` or `-Format aab`; the previous `Build-ApkAndUploadToDrive.ps1` command remains an APK wrapper. Existing exports require `-Force` to replace. These commands verify the local copy by SHA-256, but do not confirm cloud synchronization. Copying into a synced folder can trigger an upload; when transfers are prohibited, use only `-CheckOnly` or `Test-ReleaseWorkflow.ps1`. The test suite uses temporary fixtures and simulated builds/Play commands, without real credentials or uploads.
+
+For rollback, restore the tool scripts and Unity helper together from the last working project commit while retaining unrelated game changes, project configuration and local credentials.
+
+Update verification (2026-10-04): the offline suite passed under Windows PowerShell 5.1 and PowerShell 7; the helper compiled against Unity 6000.3.15f1 with warnings treated as errors. All 17 tool files match the pinned source revision. SHA-256 checks confirmed that project configuration, existing `.meta` files, game settings, approved metadata and local credentials were unchanged. No real Android build, Play API check, export or publication was performed.
 
 ### Store descriptions and release notes
 

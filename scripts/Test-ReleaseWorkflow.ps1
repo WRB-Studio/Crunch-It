@@ -8,6 +8,7 @@ foreach ($file in Get-ChildItem -LiteralPath $PSScriptRoot -Filter *.ps1) {
     if ($errors.Count) { throw "Invalid PowerShell syntax: $($file.Name)" }
 }
 . (Join-Path $PSScriptRoot 'ReleaseCommon.ps1')
+Assert-UnityBuildHelper
 
 foreach ($case in @(
     @{ Highest = 5; Project = 3; Requested = 0; Expected = 6 },
@@ -30,3 +31,5 @@ catch { $blocked = $_.Exception.Message -like 'Production upload blocked.*' }
 if (-not $blocked) { throw 'Production guard did not stop execution before network/build access.' }
 Write-Output 'Passed: script syntax, 4 versioncode cases, 3 reused-code rejections, production guard. No build or upload started.'
 & (Join-Path $PSScriptRoot 'Test-PlayMetadata.ps1')
+& (Join-Path $PSScriptRoot 'Test-UnityAndroidBuild.ps1')
+& (Join-Path $PSScriptRoot 'Test-DriveExport.ps1')

@@ -80,6 +80,7 @@ crashlytics-build.properties
 *.pem
 *.key
 release-secrets.xml
+drive-export.json
 .env
 .env.*
 !.env.example

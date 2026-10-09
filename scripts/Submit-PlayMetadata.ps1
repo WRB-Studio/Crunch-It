@@ -23,7 +23,7 @@ Show-PlayMetadata -Metadata $metadata -VersionCode $VersionCode
 if ($CheckOnly) { return }
 
 $fastlanePath = Resolve-Fastlane
-$config = Get-ReleaseConfig
+$config = Get-ReleaseConfig -RequirePlay
 $directory = Write-PlayMetadata -Metadata $metadata -VersionCode $VersionCode
 $arguments = @('supply', '--package_name', $script:ReleaseProject.PackageName,
     '--json_key', $config.ServiceAccountJsonPath, '--track', $Track, '--version_code', $VersionCode.ToString(),

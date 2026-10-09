@@ -2,7 +2,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:ProjectRoot = Split-Path -Parent $PSScriptRoot
-$script:ReleaseProject = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'release.config.json') -Raw | ConvertFrom-Json
+$script:ReleaseProject = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'release.config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 foreach ($field in @('PackageName', 'ArtifactName', 'SecretsKey')) {
     if (-not $script:ReleaseProject.PSObject.Properties[$field] -or
         [string]::IsNullOrWhiteSpace($script:ReleaseProject.$field)) { throw "Missing release configuration field: $field" }
@@ -12,6 +12,8 @@ foreach ($field in @('ArtifactName', 'SecretsKey')) {
     if ($script:ReleaseProject.$field -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]*$') { throw "Invalid release configuration field: $field" }
 }
 $script:ReleaseConfigPath = Join-Path $env:LOCALAPPDATA "UnityAndroidRelease\$($script:ReleaseProject.SecretsKey)\release-secrets.xml"
+$script:DriveConfigPath = Join-Path (Split-Path -Parent $script:ReleaseConfigPath) 'drive-export.json'
+$script:BuildProtocolVersion = 1
 
 function ConvertFrom-SecureStringPlainText {
     param([Parameter(Mandatory)][Security.SecureString]$Value)
@@ -26,11 +28,31 @@ function ConvertFrom-SecureStringPlainText {
 }
 
 function Get-ReleaseConfig {
+    param([switch]$RequirePlay)
+
     if (-not (Test-Path -LiteralPath $script:ReleaseConfigPath)) {
         throw "Release configuration is missing. Run scripts\Set-ReleaseSecrets.ps1 once."
     }
 
-    return Import-Clixml -LiteralPath $script:ReleaseConfigPath
+    $config = Import-Clixml -LiteralPath $script:ReleaseConfigPath
+    if ($RequirePlay -and (-not $config.PSObject.Properties['ServiceAccountJsonPath'] -or
+        [string]::IsNullOrWhiteSpace($config.ServiceAccountJsonPath) -or
+        -not (Test-Path -LiteralPath $config.ServiceAccountJsonPath -PathType Leaf))) {
+        throw 'Google Play service-account file is missing. Configure ServiceAccountJsonPath with Set-ReleaseSecrets.ps1.'
+    }
+    return $config
+}
+
+function Assert-UnityBuildHelper {
+    $helperPath = Join-Path $script:ProjectRoot 'Assets\Editor\UnityAndroidBuild.cs'
+    if (-not (Test-Path -LiteralPath $helperPath -PathType Leaf)) {
+        throw 'Unity build helper is missing. Install Assets/Editor/UnityAndroidBuild.cs together with scripts/ from the same tool revision.'
+    }
+    $helper = Get-Content -LiteralPath $helperPath -Raw
+    $protocol = [regex]::Match($helper, 'public const int ProtocolVersion = (\d+);')
+    if (-not $protocol.Success -or [int]$protocol.Groups[1].Value -ne $script:BuildProtocolVersion) {
+        throw 'Unity build helper is incompatible. Update scripts/ and Assets/Editor/UnityAndroidBuild.cs together; preserve release.config.json and the existing .meta file. See UPDATING.md.'
+    }
 }
 
 function Resolve-UnityEditor {
@@ -92,8 +114,7 @@ function Resolve-Fastlane {
 }
 
 function Get-HighestPlayVersionCode {
-    $config = Get-ReleaseConfig
-    if (-not (Test-Path -LiteralPath $config.ServiceAccountJsonPath -PathType Leaf)) { throw 'Google Play service-account file is missing.' }
+    $config = Get-ReleaseConfig -RequirePlay
     $ruby = Get-Command ruby -ErrorAction SilentlyContinue
     $rubyPath = if ($ruby) { $ruby.Source } else { Join-Path (Split-Path -Parent (Resolve-Fastlane)) 'ruby.exe' }
     $oldKey = $env:UNITY_RELEASE_PLAY_KEY
@@ -115,9 +136,11 @@ function Invoke-UnityAndroidBuild {
     param(
         [Parameter(Mandatory)][ValidateSet('apk', 'aab')][string]$Format,
         [string]$UnityPath,
-        [int]$VersionCode
+        [ValidateRange(0, [int]::MaxValue)][int]$VersionCode
     )
 
+    Assert-UnityBuildHelper
+    $Format = $Format.ToLowerInvariant()
     $config = Get-ReleaseConfig
     foreach ($path in @($config.KeystorePath)) {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -140,6 +163,7 @@ function Invoke-UnityAndroidBuild {
 
     $previousEnvironment = @{}
     $environmentValues = @{
+        UNITY_RELEASE_PROTOCOL_VERSION = $script:BuildProtocolVersion.ToString()
         UNITY_RELEASE_BUILD_OUTPUT = $outputPath
         UNITY_RELEASE_BUILD_RESULT = $receiptPath
         UNITY_RELEASE_PACKAGE_NAME = $script:ReleaseProject.PackageName
@@ -159,6 +183,7 @@ function Invoke-UnityAndroidBuild {
 
         $process = Start-Process -FilePath $unity -ArgumentList @(
             '-batchmode', '-nographics', '-quit',
+            '-buildTarget', 'Android',
             '-projectPath', ('"' + $script:ProjectRoot + '"'),
             '-executeMethod', 'UnityAndroidRelease.Editor.UnityAndroidBuild.BuildFromEnvironment',
             '-logFile', ('"' + $logPath + '"')
@@ -166,8 +191,12 @@ function Invoke-UnityAndroidBuild {
         if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $outputPath) -or -not (Test-Path -LiteralPath $receiptPath)) {
             throw "Unity build failed. See $logPath"
         }
-        $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
-        if ($receipt.packageName -ne $script:ReleaseProject.PackageName -or
+        $receipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (-not $receipt.PSObject.Properties['protocolVersion'] -or
+            $receipt.protocolVersion -ne $script:BuildProtocolVersion -or
+            -not $receipt.PSObject.Properties['format'] -or $receipt.format -cne $Format -or
+            $receipt.packageName -cne $script:ReleaseProject.PackageName -or
+            $receipt.versionCode -lt 1 -or [string]::IsNullOrWhiteSpace($receipt.versionName) -or
             ($VersionCode -and $receipt.versionCode -ne $VersionCode) -or
             $receipt.outputPath -ne $outputPath) { throw 'Build receipt does not match the requested release.' }
     }
