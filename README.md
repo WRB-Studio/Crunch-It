@@ -16,9 +16,8 @@ Available on Google Play <a href="https://play.google.com/store/apps/details?id=
 
 ## Unity Android Release Tools
 
-Integrated from [WRB-Studio/unity-android-release-tools](https://github.com/WRB-Studio/unity-android-release-tools) at commit `f49e017225a820669006d0abb886504fbd6ca79d`.
-This revision renames the repository and tool only; scripts and the Unity helper are unchanged from `ea69ec2adf8c49833bd42123e6fa31e445ff530b`. Script commands, C# namespaces, `SecretsKey` and local configuration paths remain unchanged.
-For future updates, follow the [update guide at this revision](https://github.com/WRB-Studio/unity-android-release-tools/blob/f49e017225a820669006d0abb886504fbd6ca79d/UPDATING.md): update all PowerShell/Ruby scripts and the Unity build helper together, preserving this project's configuration, local secret locations and existing `.meta` GUIDs. Scripts and helper now use build protocol 1 and validate the receipt's protocol and artifact format before export or upload.
+Integrated from [WRB-Studio/unity-android-release-tools](https://github.com/WRB-Studio/unity-android-release-tools) at commit `8d9fce859fa9a606a621acd524665e109e7b8e28` (fetched `origin/main`, 2026-10-10).
+For future updates, follow the [update guide at this revision](https://github.com/WRB-Studio/unity-android-release-tools/blob/8d9fce859fa9a606a621acd524665e109e7b8e28/UPDATING.md): use the latest fetched `origin/main` by default and update all PowerShell/Ruby scripts and both Editor files together, preserving this project's configuration, local secret locations and existing `.meta` GUIDs. Record the actual source revision after verification. Scripts and helper use build protocol 1 and validate the receipt's protocol and artifact format before export or upload.
 Project configuration is in `scripts/release.config.json`; builds and logs go to `Builds/Android`.
 Requires Unity Android Build Support (SDK/NDK/OpenJDK), Ruby and Fastlane.
 
@@ -62,7 +61,28 @@ An explicitly requested export uses `Build-AndroidAndExportToDrive.ps1 -Format a
 
 For rollback, restore the tool scripts and Unity helper together from the last working project commit while retaining unrelated game changes, project configuration and local credentials.
 
-Update verification (2026-10-04): the offline suite passed under Windows PowerShell 5.1 and PowerShell 7; the helper compiled against Unity 6000.3.15f1 with warnings treated as errors. All 17 tool files match the pinned source revision. SHA-256 checks confirmed that project configuration, existing `.meta` files, game settings, approved metadata and local credentials were unchanged. No real Android build, Play API check, export or publication was performed.
+Update verification (2026-10-10): the offline suite passed under Windows PowerShell 5.1 and PowerShell 7, including simulated device installation/launch and menu dispatch. Both Editor files compiled against Unity 6000.3.25f1 with warnings treated as errors; all 18 menu actions registered in a disposable Unity test project. The existing Drive destination passed the local CheckOnly command. Project configuration, existing `.meta` files, game settings, approved metadata and local credentials were retained. No real Android build, device installation, Play API check, export or publication was performed.
+
+### Unity menu and USB installation
+
+Both Editor files are installed: `Assets/Editor/UnityAndroidBuild.cs` and `Assets/Editor/UnityAndroidReleaseMenu.cs`. Open **Tools → Unity Android Release Tools** for APK/AAB builds, phone installation, Drive exports, Play releases, setup, tests and logs. Production submission requires confirmation in the Editor. Menu builds use a dedicated isolated copy so the source Editor can stay open; save scenes and assets first. Allow at least 25 GB free space on the build cache/output volumes. Use a new empty cache folder or one already marked by the tool for this project.
+
+```powershell
+# Local signed AAB build, without upload
+./scripts/Build-Aab.ps1
+# Optional isolated signed build while the source Editor stays open
+./scripts/Build-Apk.ps1 -BuildRoot '<dedicated-empty-cache-folder>'
+# Configure local Editor/ADB/cache paths without building or installing
+./scripts/Set-AndroidDeviceBuildSettings.ps1 -UnityPath '<installed-Editor/Unity.exe>' -BuildRoot '<dedicated-empty-cache-folder>'
+# Check an attached authorized Android device without building/installing
+./scripts/Build-ApkAndInstall.ps1 -CheckOnly
+# Only when installation is requested: build, install and launch
+./scripts/Build-ApkAndInstall.ps1 -Development
+```
+
+Device builds use the existing package identity and leave the source project's version/signing settings unchanged. They use debug signing by default; `-ReleaseSigning` uses the existing release credentials. With multiple devices choose `-DeviceSerial`, or use the menu's device picker. Installation preserves app data and launches the verified app; `-NoLaunch` disables launching for CLI use. Signature conflicts stop the operation; `-ReplaceExistingApp` permits uninstalling the target app and deleting its local data only when explicitly requested. Neither device build variant uploads to Play or Drive.
+
+Device/cache settings are local: `Builds/Android/device-build.json` takes precedence over `%LOCALAPPDATA%/UnityAndroidRelease/<SecretsKey>/device-build.json`. Both are ignored by Git; device serial numbers are not saved. Menu registration and fixture tests do not replace a manual gameplay, USB or cancellation test in the actual project.
 
 ### Store descriptions and release notes
 

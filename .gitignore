@@ -81,6 +81,7 @@ crashlytics-build.properties
 *.key
 release-secrets.xml
 drive-export.json
+device-build.json
 .env
 .env.*
 !.env.example
